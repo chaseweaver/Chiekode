@@ -18,6 +18,12 @@ import (
 func Reply(s *discordgo.Session, m *discordgo.MessageCreate, msg string) {
 	r := fmt.Sprintf("<@!%s>, %s", m.Author.ID, msg)
 	s.ChannelMessageSend(m.ChannelID, r)
+	return
+}
+
+// FormatString adds string formatting (i.e. asciidoc)
+func FormatString(s string, t string) string {
+	return fmt.Sprintf("```%s\n" + s + "```", t) 
 }
 
 // LogCommands logs commands being run
@@ -31,10 +37,11 @@ func LogCommands(s *discordgo.Session, m *discordgo.MessageCreate, cmd string, a
 	}
 	log.Printf(
 		"\n"+
-			"Guild:     %s / %s\n"+
-			"User:      %s / %s\n"+
-			"Command:   %s\n"+
-			"Args:      %s"+
-			"\n\n",
+		"Guild:     %s / %s\n"+
+		"User:      %s / %s\n"+
+		"Command:   %s\n"+
+		"Args:      %s"+
+		"\n\n",
 		guild.Name, m.GuildID, m.Author.Username+m.Author.Discriminator, m.Author.ID, cmd, args)
+	return
 }

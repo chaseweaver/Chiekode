@@ -9,6 +9,22 @@ package main
  */
 
 func init() {
+	RegisterNewCommand("help", Command{
+		Name:            "help",
+		Func:            Help,
+		Enabled:         true,
+		NSFWOnly:        false,
+		IgnoreSelf:      true,
+		IgnoreBots:      true,
+		RunIn:           []string{"GuildText", "DM"},
+		Aliases:         []string{},
+		BotPermissions:  []string{},
+		UserPermissions: []string{},
+		ArgsDelim:       " ",
+		ArgsUsage:       "[command]",
+		Description:     "Displays a helpful help menu.",
+	})
+
 	RegisterNewCommand("avatar", Command{
 		Name:            "avatar",
 		Func:            Avatar,
@@ -21,7 +37,7 @@ func init() {
 		BotPermissions:  []string{},
 		UserPermissions: []string{},
 		ArgsDelim:       " ",
-		Usage:           "+<avatar|pfp|icon> [@member]",
+		ArgsUsage:       "[@member]",
 		Description:     "Fetches the avatar/pfp for the requested member.",
 	})
 
@@ -37,7 +53,7 @@ func init() {
 		BotPermissions:  []string{},
 		UserPermissions: []string{},
 		ArgsDelim:       " ",
-		Usage:           "N/A",
+		ArgsUsage:       "",
 		Description:     "Test command",
 	})
 }

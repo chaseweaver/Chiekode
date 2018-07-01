@@ -29,7 +29,7 @@ type Command struct {
 	BotPermissions  []string
 	UserPermissions []string
 	ArgsDelim       string
-	Usage           string
+	ArgsUsage       string
 	Description     string
 }
 
@@ -38,15 +38,6 @@ var commands = make(map[string]Command)
 // CheckValidPrereq checks if command is valid to be ran
 func CheckValidPrereq(s *discordgo.Session, m *discordgo.MessageCreate, c Command) bool {
 	if !c.Enabled {
-		return false
-	}
-
-	nc, err := s.Channel(m.ChannelID)
-	if err != nil {
-		log.Print(err)
-	}
-
-	if !nc.NSFW && c.NSFWOnly {
 		return false
 	}
 
@@ -64,11 +55,29 @@ func CheckValidPrereq(s *discordgo.Session, m *discordgo.MessageCreate, c Comman
 // RegisterNewCommand creates a new command
 func RegisterNewCommand(k string, c Command) {
 	commands[k] = c
+	return
+}
+
+// IsNSFWOnly returns true if the command requests an NSFW-only channel and the channel is NSFW only
+func IsNSFWOnly (s *discordgo.Session, m *discordgo.MessageCreate, c Command) (bool, error) {
+	channel, err := s.Channel(m.ChannelID)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if channel.NSFW && c.NSFWOnly {
+		return true, nil
+	}
+	return false, err
 }
 
 // RemoveCommand deletes a command
 func RemoveCommand(k string) {
-	delete(commands, k)
+	if HasCommand(k) {
+		delete(commands, k)
+		return
+	}
+	return
 }
 
 // HasCommand checks if a command is already mapped
@@ -108,7 +117,7 @@ func FetchCommand(k string) Command {
 	return Command{}
 }
 
-// FetchCommandName returns a valid command
+// FetchCommandName returns a valid command if it
 func FetchCommandName(k string) string {
 	if HasCommand(commands[k].Name) {
 		return commands[k].Name
@@ -138,4 +147,53 @@ func Call(m map[string]interface{}, name string, params ...interface{}) (result 
 	}
 	result = f.Call(in)
 	return
+}
+
+
+// ComesFromDM returns true if a message comes from a DM channel
+func ComesFromDM(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error) {
+	channel, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		if channel, err = s.Channel(m.ChannelID); err != nil {
+			return false, err
+		}
+	}
+	return channel.Type == discordgo.ChannelTypeDM, nil
+}
+
+
+// ComesFromText returns true if a message comes from a Text channel
+func ComesFromText(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error) {
+	channel, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		if channel, err = s.Channel(m.ChannelID); err != nil {
+			return false, err
+		}
+	}
+	return channel.Type == discordgo.ChannelTypeGuildText, nil
+}
+
+
+// Checks if the guild member has the required permission across all roles
+func MemberHasPermission(s *discordgo.Session, guildID string, userID string, permission int) (bool, error) {
+	mem, err := s.State.Member(guildID, userID)
+	if err != nil {
+		if mem, err = s.GuildMember(guildID, userID); err != nil {
+			return false, err
+		}
+	}
+
+	// Iterate through the role IDs stored in mem.Roles
+	// to check permissions
+	for _, roleID := range mem.Roles {
+		role, err := s.State.Role(guildID, roleID)
+		if err != nil {
+			return false, err
+		}
+		if role.Permissions&permission != 0 {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

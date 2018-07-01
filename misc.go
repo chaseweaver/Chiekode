@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
-
+	"strings"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -13,6 +13,42 @@ import (
  *
  * This package bundles miscellaneous commands for guilds.
  */
+
+func Help(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
+	if len(args) > 0 {
+		c := FetchCommand(args[0])
+		str := fmt.Sprintf("=== %s ===\n", c.Name)
+		tmp := c.ArgsDelim
+		na := c.Name
+
+		if c.ArgsDelim == " " {
+			tmp = "[SPACE]"
+		}
+
+		if len(c.Aliases) > 0 {
+			na = c.Name + "|" + strings.Join(c.Aliases, "|")
+		} 
+
+		str += fmt.Sprintf(
+			"Command     ::  %s\n" +
+			"Description ::  %s\n" +
+			"Usage       ::  %s\n" +
+			"Run In      ::  %s\n" +
+			"Arg Delim   ::  %s\n",
+			c.Name,
+			c.Description, 
+			fmt.Sprintf("%s<%s> %s", conf.Prefix, na, c.ArgsUsage),
+			strings.Join(c.RunIn, ", "), tmp)
+		s.ChannelMessageSend(m.ChannelID, FormatString(str, "asciidoc"))
+	} else {
+		str := "=== Help ===\n\n"
+		for k := range commands {
+			str += fmt.Sprintf("%s:\n\t%s\n", commands[k].Name, commands[k].Description)
+		}
+		s.ChannelMessageSend(m.ChannelID, FormatString(str, "asciidoc"))
+	}
+	return
+}
 
 // Avatar command will return member's avatar
 func Avatar(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
@@ -44,7 +80,6 @@ func Avatar(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
 			URL: m.Message.Mentions[u].AvatarURL("2048"),
 		})
 	}
-
 	return
 }
 
