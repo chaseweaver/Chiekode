@@ -1,4 +1,4 @@
-# GoBIT
+# Chiekode
 WIP Discord bot written in golang using [Discordgo](https://github.com/bwmarrin/discordgo).
 
 # Progress
@@ -17,7 +17,7 @@ Example and templates are shown below.
 # Install / Run
 1. Clone this repo
     ```
-    git clone https://github.com/chaseweaver/gobit.git
+    git clone https://github.com/chaseweaver/Chiekode.git
     ```
 2. Install required dependencies
     * Follow the install for the developer branch of [Discordgo](https://github.com/bwmarrin/discordgo)
@@ -31,7 +31,7 @@ Example and templates are shown below.
     ```
 7. Run the bot
     ```go
-    $ ./gobit
+    $ ./Chiekode
     ```
 8. ezpz
 
