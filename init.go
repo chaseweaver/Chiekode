@@ -49,11 +49,11 @@ func init() {
 		IgnoreSelf:      true,
 		IgnoreBots:      true,
 		RunIn:           []string{"GuildText", "DM"},
-		Aliases:         []string{"t1", "t2"},
+		Aliases:         []string{},
 		BotPermissions:  []string{},
 		UserPermissions: []string{},
-		ArgsDelim:       " ",
+		ArgsDelim:       "",
 		ArgsUsage:       "",
-		Description:     "Test command",
+		Description:     "Pong!",
 	})
 }

@@ -23,7 +23,7 @@ func Reply(s *discordgo.Session, m *discordgo.MessageCreate, msg string) {
 
 // FormatString adds string formatting (i.e. asciidoc)
 func FormatString(s string, t string) string {
-	return fmt.Sprintf("```%s\n" + s + "```", t) 
+	return fmt.Sprintf("```%s\n"+s+"```", t)
 }
 
 // LogCommands logs commands being run
@@ -37,11 +37,11 @@ func LogCommands(s *discordgo.Session, m *discordgo.MessageCreate, cmd string, a
 	}
 	log.Printf(
 		"\n"+
-		"Guild:     %s / %s\n"+
-		"User:      %s / %s\n"+
-		"Command:   %s\n"+
-		"Args:      %s"+
-		"\n\n",
-		guild.Name, m.GuildID, m.Author.Username+m.Author.Discriminator, m.Author.ID, cmd, args)
+			"Guild:     %s / %s\n"+
+			"User:      %s / %s\n"+
+			"Command:   %s\n"+
+			"Args:      %s"+
+			"\n\n",
+		guild.Name, guild.ID, m.Author.Username+m.Author.Discriminator, m.Author.ID, cmd, args)
 	return
 }

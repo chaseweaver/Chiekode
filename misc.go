@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -14,6 +15,7 @@ import (
  * This package bundles miscellaneous commands for guilds.
  */
 
+// Help command returns help per all-basis or per command-basis
 func Help(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
 	if len(args) > 0 {
 		c := FetchCommand(args[0])
@@ -27,16 +29,16 @@ func Help(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
 
 		if len(c.Aliases) > 0 {
 			na = c.Name + "|" + strings.Join(c.Aliases, "|")
-		} 
+		}
 
 		str += fmt.Sprintf(
-			"Command     ::  %s\n" +
-			"Description ::  %s\n" +
-			"Usage       ::  %s\n" +
-			"Run In      ::  %s\n" +
-			"Arg Delim   ::  %s\n",
+			"Command     ::  %s\n"+
+				"Description ::  %s\n"+
+				"Usage       ::  %s\n"+
+				"Run In      ::  %s\n"+
+				"Arg Delim   ::  %s\n",
 			c.Name,
-			c.Description, 
+			c.Description,
 			fmt.Sprintf("%s<%s> %s", conf.Prefix, na, c.ArgsUsage),
 			strings.Join(c.RunIn, ", "), tmp)
 		s.ChannelMessageSend(m.ChannelID, FormatString(str, "asciidoc"))
@@ -82,4 +84,3 @@ func Avatar(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
 	}
 	return
 }
-

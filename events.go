@@ -2,6 +2,7 @@ package main
 
 import (
 	"strings"
+
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -12,6 +13,7 @@ import (
  * This package bundles event commands when they are triggered.
  */
 
+// MessageCreate triggers on a message that is visible to the bot
 func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if !strings.HasPrefix(m.Content, conf.Prefix) {
