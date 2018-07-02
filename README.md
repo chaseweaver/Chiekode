@@ -1,4 +1,4 @@
-# Chiekode
+# Nagato
 WIP Discord bot written in golang using [Discordgo](https://github.com/bwmarrin/discordgo).
 
 # Progress
