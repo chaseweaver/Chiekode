@@ -31,7 +31,7 @@ Example and templates are shown below.
     ```
 7. Run the bot
     ```go
-    $ ./Chiekode
+    $ ./Nagato
     ```
 8. ezpz
 
