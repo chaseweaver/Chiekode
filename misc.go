@@ -33,10 +33,10 @@ func Help(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
 
 		str += fmt.Sprintf(
 			"Command     ::  %s\n"+
-				"Description ::  %s\n"+
-				"Usage       ::  %s\n"+
-				"Run In      ::  %s\n"+
-				"Arg Delim   ::  %s\n",
+			"Description ::  %s\n"+
+			"Usage       ::  %s\n"+
+			"Run In      ::  %s\n"+
+			"Arg Delim   ::  %s\n",
 			c.Name,
 			c.Description,
 			fmt.Sprintf("%s<%s> %s", conf.Prefix, na, c.ArgsUsage),

@@ -14,4 +14,4 @@ import (
 // Kick command will kick a mentioned user and log it to the redis database
 func Kick(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
 
-}
+}s
