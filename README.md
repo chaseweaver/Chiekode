@@ -17,7 +17,7 @@ Example and templates are shown below.
 # Install / Run
 1. Clone this repo
     ```
-    git clone https://github.com/chaseweaver/Chiekode.git
+    git clone https://github.com/chaseweaver/Nagato.git
     ```
 2. Install required dependencies
     * Follow the install for the developer branch of [Discordgo](https://github.com/bwmarrin/discordgo)
@@ -84,7 +84,7 @@ Here's the list of currently supported properties:
 | Property        | Description                                                          | Type                                                   |
 | --------------- |----------------------------------------------------------------------| -------------------------------------------------------|
 | Name            | Name of the command, case sensitive                                  | [string](https://golang.org/pkg/builtin/#string)       |
-| Func            | Name of the command func that gets ran, case sensitive               | func()                                                 |
+| Func            | Name of the command func that gets ran, case sensitive               | func                                                   |
 | Enabled         | Whether or not the command is enabled and can be ran                 | [bool](https://golang.org/pkg/builtin/#bool)           |
 | NSFWOnly        | Whether or not the command is only available in NSFW-marked channels | [bool](https://golang.org/pkg/builtin/#bool)           |
 | IgnoreSelf      | Whether or not the bot will ignore itself                            | [bool](https://golang.org/pkg/builtin/#bool)           |
