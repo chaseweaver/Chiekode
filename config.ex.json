@@ -1,4 +1,5 @@
 {
   "Prefix" : "+",
-  "BotToken" : "BOT_TOKEN_HERE"
+  "BotToken" : "BOT_TOKEN_HERE",
+  "DatabaseURL" : "URL_HERE"
 }

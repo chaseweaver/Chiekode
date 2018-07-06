@@ -16,22 +16,34 @@ import (
  * properties.
  */
 
-// Command struct per command
-type Command struct {
-	Name            string
-	Func            func(*discordgo.Session, *discordgo.MessageCreate, []string)
-	Enabled         bool
-	NSFWOnly        bool
-	IgnoreSelf      bool
-	IgnoreBots      bool
-	RunIn           []string
-	Aliases         []string
-	BotPermissions  []string
-	UserPermissions []string
-	ArgsDelim       string
-	ArgsUsage       string
-	Description     string
-}
+type (
+	// Command struct per command
+	Command struct {
+		Name            string
+		Func            func(*discordgo.Session, *discordgo.MessageCreate, []string)
+		Enabled         bool
+		NSFWOnly        bool
+		IgnoreSelf      bool
+		IgnoreBots      bool
+		RunIn           []string
+		Aliases         []string
+		BotPermissions  []string
+		UserPermissions []string
+		ArgsDelim       string
+		ArgsUsage       string
+		Description     string
+	}
+
+	// Context of pass-in per command
+	Context struct {
+		session *discordgo.Session
+		event   *discordgo.MessageCreate
+		guild   *discordgo.Guild
+		channel *discordgo.Channel
+		content string
+		args    []string
+	}
+)
 
 var commands = make(map[string]Command)
 
@@ -59,7 +71,7 @@ func RegisterNewCommand(k string, c Command) {
 }
 
 // IsNSFWOnly returns true if the command requests an NSFW-only channel and the channel is NSFW only
-func IsNSFWOnly (s *discordgo.Session, m *discordgo.MessageCreate, c Command) (bool, error) {
+func IsNSFWOnly(s *discordgo.Session, m *discordgo.MessageCreate, c Command) (bool, error) {
 	channel, err := s.Channel(m.ChannelID)
 	if err != nil {
 		log.Println(err)
@@ -149,7 +161,6 @@ func Call(m map[string]interface{}, name string, params ...interface{}) (result 
 	return
 }
 
-
 // ComesFromDM returns true if a message comes from a DM channel
 func ComesFromDM(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error) {
 	channel, err := s.State.Channel(m.ChannelID)
@@ -160,7 +171,6 @@ func ComesFromDM(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error)
 	}
 	return channel.Type == discordgo.ChannelTypeDM, nil
 }
-
 
 // ComesFromText returns true if a message comes from a Text channel
 func ComesFromText(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error) {
@@ -173,8 +183,7 @@ func ComesFromText(s *discordgo.Session, m *discordgo.MessageCreate) (bool, erro
 	return channel.Type == discordgo.ChannelTypeGuildText, nil
 }
 
-
-// Checks if the guild member has the required permission across all roles
+// MemberHasPermission checks if the guild member has the required permission across all roles
 func MemberHasPermission(s *discordgo.Session, guildID string, userID string, permission int) (bool, error) {
 	mem, err := s.State.Member(guildID, userID)
 	if err != nil {

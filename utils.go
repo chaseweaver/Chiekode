@@ -37,11 +37,11 @@ func LogCommands(s *discordgo.Session, m *discordgo.MessageCreate, cmd string, a
 	}
 	log.Printf(
 		"\n"+
-		"Guild:     %s / %s\n"+
-		"User:      %s / %s\n"+
-		"Command:   %s\n"+
-		"Args:      %s"+
-		"\n\n",
+			"Guild:     %s / %s\n"+
+			"User:      %s / %s\n"+
+			"Command:   %s\n"+
+			"Args:      %s"+
+			"\n\n",
 		guild.Name, guild.ID, m.Author.Username+m.Author.Discriminator, m.Author.ID, cmd, args)
 	return
 }

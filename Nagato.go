@@ -12,10 +12,11 @@ import (
 
 // Configuration file contents
 type Configuration struct {
-	Prefix   string
-	BotToken string
+	Prefix      string
+	BotToken    string
+	DatabaseURL string
 }
- 
+
 var conf = Configuration{}
 var err = gonfig.GetConf("config.json", &conf)
 
@@ -26,6 +27,10 @@ func main() {
 		fmt.Println("error creating Discord session,", err)
 		return
 	}
+
+	// Establish connection to Redis database
+	// DialRedisDatabaseURL(conf.DatabaseURL)
+	DialRedisDatabaseLocal("tcp", ":6379")
 
 	// Register the MessageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(MessageCreate)
