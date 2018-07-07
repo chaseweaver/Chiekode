@@ -1,7 +1,9 @@
 package main
 
 import (
-	"github.com/bwmarrin/discordgo"
+	"strings"
+
+	"github.com/novalagung/golpal"
 )
 
 /**
@@ -12,7 +14,15 @@ import (
  */
 
 // Ping command will return Pong!
-func Ping(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
-	s.ChannelMessageSend(m.ChannelID, "🏓 Pong!")
-	return
+func Ping(ctx Context) {
+	ctx.session.ChannelMessageSend(ctx.channel.ID, "🏓 Pong!")
+}
+
+// Eval is the bot's evaluate command
+func Eval(ctx Context) {
+	out, err := golpal.New().Execute(strings.Join(ctx.args, ""))
+	if err != nil {
+		FormatString("**RESULT**\n"+err.Error(), "golang")
+	}
+	ctx.session.ChannelMessageSend(ctx.channel.ID, FormatString("**RESULT**\n"+out, "golang"))
 }

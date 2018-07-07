@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -15,26 +16,43 @@ import (
 
 // MessageCreate triggers on a message that is visible to the bot
 func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-
 	if !strings.HasPrefix(m.Content, conf.Prefix) {
 		return
 	}
 
-	msg := strings.TrimPrefix(m.Content, "+")
-	nme := strings.Split(msg, " ")[0]
-	cmd := FetchCommand(nme)
-
-	if !CheckValidPrereq(s, m, FetchCommand(nme)) {
+	channel, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		log.Println("Could not get source channel,", err)
 		return
 	}
 
-	args := strings.Split(msg, cmd.ArgsDelim)[1:]
+	guild, err := s.State.Guild(channel.GuildID)
+	if err != nil {
+		log.Println("Could not get source guild,", err)
+		return
+	}
+
+	// Give context for command pass-in
+	ctx := Context{
+		session: s,
+		event:   m,
+		guild:   guild,
+		channel: channel,
+		name:    strings.Split(strings.TrimPrefix(m.Content, conf.Prefix), " ")[0],
+	}
+
+	ctx.command = FetchCommand(ctx.name)
+	ctx.args = strings.Split(ctx.event.Content, ctx.command.ArgsDelim)[1:]
+
+	if !CheckValidPrereq(ctx.session, ctx.event, ctx.command) {
+		return
+	}
 
 	// Fetch command funcs from command properties init()
 	funcs := map[string]interface{}{
-		FetchCommand(nme).Name: FetchCommand(nme).Func,
+		ctx.command.Name: ctx.command.Func,
 	}
 
-	LogCommands(s, m, FetchCommandName(nme), args)
-	Call(funcs, FetchCommandName(nme), s, m, args)
+	LogCommands(ctx)
+	Call(funcs, ctx.name, ctx)
 }

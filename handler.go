@@ -17,14 +17,26 @@ import (
  */
 
 type (
+	// Context of pass-in per command
+	Context struct {
+		session *discordgo.Session
+		event   *discordgo.MessageCreate
+		guild   *discordgo.Guild
+		channel *discordgo.Channel
+		command Command
+		name    string
+		args    []string
+	}
+
 	// Command struct per command
 	Command struct {
 		Name            string
-		Func            func(*discordgo.Session, *discordgo.MessageCreate, []string)
+		Func            func(*Context)
 		Enabled         bool
 		NSFWOnly        bool
 		IgnoreSelf      bool
 		IgnoreBots      bool
+		Locked          bool
 		RunIn           []string
 		Aliases         []string
 		BotPermissions  []string
@@ -32,16 +44,6 @@ type (
 		ArgsDelim       string
 		ArgsUsage       string
 		Description     string
-	}
-
-	// Context of pass-in per command
-	Context struct {
-		session *discordgo.Session
-		event   *discordgo.MessageCreate
-		guild   *discordgo.Guild
-		channel *discordgo.Channel
-		content string
-		args    []string
 	}
 )
 

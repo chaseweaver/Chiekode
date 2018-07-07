@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-
-	"github.com/bwmarrin/discordgo"
 )
 
 /**
@@ -15,10 +13,8 @@ import (
  */
 
 // Reply shorthand
-func Reply(s *discordgo.Session, m *discordgo.MessageCreate, msg string) {
-	r := fmt.Sprintf("<@!%s>, %s", m.Author.ID, msg)
-	s.ChannelMessageSend(m.ChannelID, r)
-	return
+func Reply(ctx Context, s string) {
+	ctx.session.ChannelMessageSend(ctx.channel.ID, fmt.Sprintf("<@!%s>, %s", ctx.event.Author.ID, s))
 }
 
 // FormatString adds string formatting (i.e. asciidoc)
@@ -27,14 +23,7 @@ func FormatString(s string, t string) string {
 }
 
 // LogCommands logs commands being run
-func LogCommands(s *discordgo.Session, m *discordgo.MessageCreate, cmd string, args []string) {
-	guild, err := s.State.Guild(m.GuildID)
-	if err != nil {
-		guild, err = s.Guild(m.GuildID)
-		if err != nil {
-			return
-		}
-	}
+func LogCommands(ctx Context) {
 	log.Printf(
 		"\n"+
 			"Guild:     %s / %s\n"+
@@ -42,6 +31,8 @@ func LogCommands(s *discordgo.Session, m *discordgo.MessageCreate, cmd string, a
 			"Command:   %s\n"+
 			"Args:      %s"+
 			"\n\n",
-		guild.Name, guild.ID, m.Author.Username+m.Author.Discriminator, m.Author.ID, cmd, args)
+		ctx.guild.Name, ctx.guild.ID,
+		ctx.event.Author.Username+ctx.event.Author.Discriminator,
+		ctx.event.Author.ID, ctx.name, ctx.args)
 	return
 }
