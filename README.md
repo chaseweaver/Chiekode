@@ -46,9 +46,9 @@ Example and templates are shown below.
 * init (to be placed in `init.go`)
     ```go
     RegisterNewCommand(Command{
-		Name:            "Command Name",
-		Func:            FunctionName,
-		Enabled:         true,
+        Name:            "Command Name",
+	    Func:            FunctionName,
+	    Enabled:         true,
 	    NSFWOnly:        false,
 	    IgnoreSelf:      true,
         IgnoreBots:      true,
