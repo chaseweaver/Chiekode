@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -16,7 +15,6 @@ import (
 
 // MessageCreate triggers on a message that is visible to the bot
 func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-
 	// Checks if message content begins with prefix
 	if !strings.HasPrefix(m.Content, conf.Prefix) {
 		return
@@ -25,14 +23,6 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Fetches channel object
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
-		log.Println("Could not get source channel,", err)
-		return
-	}
-
-	// Fetches guild object
-	guild, err := s.State.Guild(channel.GuildID)
-	if err != nil {
-		log.Println("Could not get source guild,", err)
 		return
 	}
 
@@ -40,9 +30,17 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	ctx := Context{
 		Session: s,
 		Event:   m,
-		Guild:   guild,
 		Channel: channel,
 		Name:    strings.Split(strings.TrimPrefix(m.Content, conf.Prefix), " ")[0],
+	}
+
+	// Fetches guild object if text channel is NOT a DM
+	if ctx.Channel.Type == discordgo.ChannelTypeGuildText {
+		guild, err := s.State.Guild(ctx.Channel.GuildID)
+		if err != nil {
+			return
+		}
+		ctx.Guild = guild
 	}
 
 	// Returns a valid command using a name/alias

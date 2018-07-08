@@ -71,13 +71,10 @@ func CheckValidPrereq(ctx Context) bool {
 		return false
 	}
 
-	// RunIn Text
+	// RunIn Text, DM
 	if ctx.Channel.Type == discordgo.ChannelTypeGuildText && !Contains(ctx.Command.RunIn, "Text") {
 		return false
-	}
-
-	// RunIn DM
-	if ctx.Channel.Type == discordgo.ChannelTypeDM && !Contains(ctx.Command.RunIn, "DM") {
+	} else if ctx.Channel.Type == discordgo.ChannelTypeDM && !Contains(ctx.Command.RunIn, "DM") {
 		return false
 	}
 

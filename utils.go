@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 /**
@@ -24,16 +26,29 @@ func FormatString(s string, t string) string {
 
 // LogCommands logs commands being run
 func LogCommands(ctx Context) {
-	log.Printf(
-		"\n"+
-			"Guild:     %s / %s\n"+
-			"User:      %s / %s\n"+
-			"Command:   %s\n"+
-			"Args:      %s"+
-			"\n\n",
-		ctx.Guild.Name, ctx.Guild.ID,
-		ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator,
-		ctx.Event.Author.ID, ctx.Name, ctx.Args)
+	if ctx.Channel.Type == discordgo.ChannelTypeGuildText {
+		log.Printf(
+			"\n"+
+				"User:      %s / %s\n"+
+				"Guild:     %s / %s\n"+
+				"Channel:   %s / %s\n"+
+				"Command:   %s\n"+
+				"Args:      %s"+
+				"\n\n",
+			ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID,
+			ctx.Guild.Name, ctx.Guild.ID, ctx.Channel.Name, ctx.Channel.ID,
+			ctx.Name, ctx.Args)
+	} else {
+		log.Printf(
+			"\n"+
+				"User:      %s / %s\n"+
+				"DM:        %s\n"+
+				"Command:   %s\n"+
+				"Args:      %s"+
+				"\n\n",
+			ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator,
+			ctx.Event.Author.ID, ctx.Channel.ID, ctx.Name, ctx.Args)
+	}
 	return
 }
 
