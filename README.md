@@ -55,7 +55,6 @@ Example and templates are shown below.
         Locked:          false,
 	    RunIn:           []string{"Text", "DM"},
 	    Aliases:         []string{"EX1", "EX2"},
-	    BotPermissions:  []string{"REQUIRED_PERM", "ANOTHER_PERM"},
 	    UserPermissions: []string{"REQUIRED_PERM", "ANOTHER_PERM"},
 	    ArgsDelim:       " ",
 	    Usage:           "Example of how to run command here",
@@ -96,7 +95,6 @@ This is to be passed in for each func call:
 | Locked          | Whether or not the command is for the owner only                     | [bool](https://golang.org/pkg/builtin/#bool)           |
 | RunIn           | Channel type the command can be ran in (DM, Text)                    | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | Aliases         | Other names the command will execute under                           | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
-| BotPermissions  | Permissions the bot needs in order for the command to execute        | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | UserPermissions | Permissions the user needs in order for the command to execute       | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | ArgsDelim       | Seperator that will parse individual arguments                       | [string](https://golang.org/pkg/builtin/#string)       |
 | Usage           | Example of how to run the command, used for `help`                   | [string](https://golang.org/pkg/builtin/#string)       |
