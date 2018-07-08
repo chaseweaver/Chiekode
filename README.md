@@ -54,8 +54,8 @@ Example and templates are shown below.
         IgnoreBots:      true,
         Locked:          false,
 	    RunIn:           []string{"Text", "DM"},
-	    Aliases:         []string{"EX1", "EX2"},
-	    UserPermissions: []string{"REQUIRED_PERM", "ANOTHER_PERM"},
+	    Aliases:         []string{"NameOne", "NameTwo"},
+	    UserPermissions: []string{"KickMembers"},
 	    ArgsDelim:       " ",
 	    Usage:           "Example of how to run command here",
 	    Description:     "Description Here",
@@ -113,3 +113,35 @@ This is to be passed in for each func call:
 | Command  | Command to be run                   | [Command](https://github.com/chaseweaver/Nagato#command)               |                                                    |
 | Name     | Name of the command, case sensitive | [string](https://golang.org/pkg/builtin/#string)                       |
 | Args     | Arguments passed in for the command | [\[\]string{}](https://golang.org/pkg/builtin/#string)                 |
+
+### UserPermissions
+Permissions the Author of the command needs in order for the bot to run said command (really only need the important ones like KickMembers, etc).
+
+* ReadMessages
+* SendMessages
+* SendTTSMessages
+* ManageMessages
+* EmbedLinks
+* AttachFiles
+* ReadMessageHistory
+* MentionEveryone
+* UseExternalEmojis
+* VoiceConnect
+* VoiceSpeak
+* VoiceMuteMembers
+* VoiceDeafenMembers
+* VoiceMoveMembers
+* VoiceUseVAD
+* ChangeNickname
+* ManageNicknames
+* ManageRoles
+* ManageWebhooks
+* ManageEmojis
+* CreateInstantInvite
+* KickMembers
+* BanMembers
+* Administrator
+* ManageChannels
+* ManageServer
+* AddReactions
+* ViewAuditLogs
