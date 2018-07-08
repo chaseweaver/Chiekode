@@ -132,21 +132,6 @@ func FetchCommandName(k string) string {
 	return k
 }
 
-// Call func based on name and passes Session, MessageCreate, ...args
-func Call(m map[string]interface{}, name string, params ...interface{}) (result []reflect.Value, err error) {
-	f := reflect.ValueOf(m[name])
-	if len(params) != f.Type().NumIn() {
-		err = errors.New("the number of params is not adapted")
-		return
-	}
-	in := make([]reflect.Value, len(params))
-	for k, param := range params {
-		in[k] = reflect.ValueOf(param)
-	}
-	result = f.Call(in)
-	return
-}
-
 // MemberHasPermission checks if the guild member has the required permission across all roles
 func MemberHasPermission(s *discordgo.Session, guildID string, userID string, permission int) (bool, error) {
 	mem, err := s.State.Member(guildID, userID)
@@ -171,10 +156,17 @@ func MemberHasPermission(s *discordgo.Session, guildID string, userID string, pe
 	return false, nil
 }
 
-// IsNSFWOnly returns true if the command requests an NSFW-only channel and the channel is NSFW only
-func IsNSFWOnly(ctx Context, c Command) bool {
-	if ctx.Channel.NSFW && c.NSFWOnly {
-		return true
+// Call func based on name and passes Session, MessageCreate, ...args
+func Call(m map[string]interface{}, name string, params ...interface{}) (result []reflect.Value, err error) {
+	f := reflect.ValueOf(m[name])
+	if len(params) != f.Type().NumIn() {
+		err = errors.New("the number of params is not adapted")
+		return
 	}
-	return false
+	in := make([]reflect.Value, len(params))
+	for k, param := range params {
+		in[k] = reflect.ValueOf(param)
+	}
+	result = f.Call(in)
+	return
 }
