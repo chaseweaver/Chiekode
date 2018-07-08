@@ -15,14 +15,15 @@ import (
 
 // Ping command will return Pong!
 func Ping(ctx Context) {
-	ctx.session.ChannelMessageSend(ctx.channel.ID, "🏓 Pong!")
+	ctx.Session.ChannelMessageSend(ctx.Channel.ID, "🏓 Pong!")
 }
 
 // Eval is the bot's evaluate command
 func Eval(ctx Context) {
-	out, err := golpal.New().Execute(strings.Join(ctx.args, ""))
+	out, err := golpal.New().Execute(strings.Join(ctx.Args, " "))
 	if err != nil {
-		FormatString("**RESULT**\n"+err.Error(), "golang")
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "**ERROR**\n"+FormatString(err.Error(), "go"))
+	} else {
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "**RESULT**\n"+FormatString(out, "go"))
 	}
-	ctx.session.ChannelMessageSend(ctx.channel.ID, FormatString("**RESULT**\n"+out, "golang"))
 }

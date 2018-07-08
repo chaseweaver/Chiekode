@@ -34,25 +34,25 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Give context for command pass-in
 	ctx := Context{
-		session: s,
-		event:   m,
-		guild:   guild,
-		channel: channel,
-		name:    strings.Split(strings.TrimPrefix(m.Content, conf.Prefix), " ")[0],
+		Session: s,
+		Event:   m,
+		Guild:   guild,
+		Channel: channel,
+		Name:    strings.Split(strings.TrimPrefix(m.Content, conf.Prefix), " ")[0],
 	}
 
-	ctx.command = FetchCommand(ctx.name)
-	ctx.args = strings.Split(ctx.event.Content, ctx.command.ArgsDelim)[1:]
+	ctx.Command = FetchCommand(ctx.Name)
+	ctx.Args = strings.Split(ctx.Event.Content, ctx.Command.ArgsDelim)[1:]
 
-	if !CheckValidPrereq(ctx.session, ctx.event, ctx.command) {
+	if !CheckValidPrereq(ctx.Session, ctx.Event, ctx.Command) {
 		return
 	}
 
 	// Fetch command funcs from command properties init()
 	funcs := map[string]interface{}{
-		ctx.command.Name: ctx.command.Func,
+		ctx.Command.Name: ctx.Command.Func,
 	}
 
 	LogCommands(ctx)
-	Call(funcs, ctx.name, ctx)
+	Call(funcs, ctx.Name, ctx)
 }

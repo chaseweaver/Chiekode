@@ -14,7 +14,7 @@ import (
 
 // Reply shorthand
 func Reply(ctx Context, s string) {
-	ctx.session.ChannelMessageSend(ctx.channel.ID, fmt.Sprintf("<@!%s>, %s", ctx.event.Author.ID, s))
+	ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("<@!%s>, %s", ctx.Event.Author.ID, s))
 }
 
 // FormatString adds string formatting (i.e. asciidoc)
@@ -31,8 +31,8 @@ func LogCommands(ctx Context) {
 			"Command:   %s\n"+
 			"Args:      %s"+
 			"\n\n",
-		ctx.guild.Name, ctx.guild.ID,
-		ctx.event.Author.Username+ctx.event.Author.Discriminator,
-		ctx.event.Author.ID, ctx.name, ctx.args)
+		ctx.Guild.Name, ctx.Guild.ID,
+		ctx.Event.Author.Username+ctx.Event.Author.Discriminator,
+		ctx.Event.Author.ID, ctx.Name, ctx.Args)
 	return
 }

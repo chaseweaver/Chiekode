@@ -9,7 +9,7 @@ package main
  */
 
 func init() {
-	RegisterNewCommand("help", Command{
+	RegisterNewCommand(Command{
 		Name:            "help",
 		Func:            Help,
 		Enabled:         true,
@@ -26,7 +26,7 @@ func init() {
 		Description:     "Displays a helpful help menu.",
 	})
 
-	RegisterNewCommand("avatar", Command{
+	RegisterNewCommand(Command{
 		Name:            "avatar",
 		Func:            Avatar,
 		Enabled:         true,
@@ -43,7 +43,7 @@ func init() {
 		Description:     "Fetches the avatar/pfp for the requested member.",
 	})
 
-	RegisterNewCommand("ping", Command{
+	RegisterNewCommand(Command{
 		Name:            "ping",
 		Func:            Ping,
 		Enabled:         true,
@@ -60,7 +60,7 @@ func init() {
 		Description:     "Pong!",
 	})
 
-	RegisterNewCommand("eval", Command{
+	RegisterNewCommand(Command{
 		Name:            "eval",
 		Func:            Eval,
 		Enabled:         true,

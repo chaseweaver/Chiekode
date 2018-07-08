@@ -45,13 +45,14 @@ Example and templates are shown below.
 # Templates
 * init (to be placed in `init.go`)
     ```go
-    RegisterNewCommand("Command Name", Command{
+    RegisterNewCommand(Command{
 		Name:            "Command Name",
-		Func:            FunctionName, // this must be the name of your command function
+		Func:            FunctionName,
 		Enabled:         true,
 		NSFWOnly:        false,
 		IgnoreSelf:      true,
-		IgnoreBots:      true,
+        IgnoreBots:      true,
+        Locked:          false,
 		RunIn:           []string{"GuildText", "DM"},
 		Aliases:         []string{"EX1", "EX2"},
 		BotPermissions:  []string{"REQUIRED_PERM", "ANOTHER_PERM"},
@@ -64,7 +65,7 @@ Example and templates are shown below.
 
 * Commands (to be placed in the desired `*.go`)
   ```go
-  func CommandName(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
+  func CommandName(ctx Context) {
 	  // Do some neat things here
 	  return
   }
@@ -72,7 +73,7 @@ Example and templates are shown below.
 
 * Events (to be placed in `events.go`)
     ```go
-    func EventName(s *discordgo.Session, m *discordgo.MessageCreate) {
+    func EventName(ctx Context) {
       // More neat stuff
     }
     ```
@@ -80,6 +81,9 @@ Example and templates are shown below.
 # Command Properties
 Each command has it's own properties that dictate when / how it can be run.
 Here's the list of currently supported properties:
+
+### Command
+This is to be passed in for each func call:
 
 | Property        | Description                                                          | Type                                                   |
 | --------------- |----------------------------------------------------------------------| -------------------------------------------------------|
@@ -89,6 +93,7 @@ Here's the list of currently supported properties:
 | NSFWOnly        | Whether or not the command is only available in NSFW-marked channels | [bool](https://golang.org/pkg/builtin/#bool)           |
 | IgnoreSelf      | Whether or not the bot will ignore itself                            | [bool](https://golang.org/pkg/builtin/#bool)           |
 | IgnoreBots      | Whether or not the bot will ignore other bots                        | [bool](https://golang.org/pkg/builtin/#bool)           |
+| Locked          | Whether or not the command is for the owner only                     | [bool](https://golang.org/pkg/builtin/#bool)           |
 | RunIn           | Channel type the command can be ran in (DM, GuildText, etc)          | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | Aliases         | Other names the command will execute under                           | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | BotPermissions  | Permissions the bot needs in order for the command to execute        | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
@@ -96,3 +101,16 @@ Here's the list of currently supported properties:
 | ArgsDelim       | Seperator that will parse individual arguments                       | [string](https://golang.org/pkg/builtin/#string)       |
 | Usage           | Example of how to run the command, used for `help`                   | [string](https://golang.org/pkg/builtin/#string)       |
 | Description     | Description of the command, used for `help`                          | [string](https://golang.org/pkg/builtin/#string)       |
+
+
+### Context
+This is to be passed in for each func call:
+| Property        | Description                         | Type                                                                   |
+| --------------- |-------------------------------------| -----------------------------------------------------------------------|
+| Session         | *discordgo.Session                  | [Session](https://godoc.org/github.com/bwmarrin/discordgo#Session)     |
+| Event           | *discordgo.MessageCreate            | [Event](https://godoc.org/github.com/bwmarrin/discordgo#MessageCreate) |
+| Guild           | *discordgo.Guild                    | [Guild](https://godoc.org/github.com/bwmarrin/discordgo#Guild)         |
+| Channel         | *discordgo.Channel                  | [Channel](https://godoc.org/github.com/bwmarrin/discordgo#Channel)     |
+| Command         | Command to be run                   | type Command struct                                                    |
+| Name            | Name of the command, case sensitive | [string](https://golang.org/pkg/builtin/#string)                       |
+| Args            | Arguments passed in for the command | [\[\]string{}](https://golang.org/pkg/builtin/#string)                 |

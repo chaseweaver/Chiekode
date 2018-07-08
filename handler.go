@@ -19,19 +19,19 @@ import (
 type (
 	// Context of pass-in per command
 	Context struct {
-		session *discordgo.Session
-		event   *discordgo.MessageCreate
-		guild   *discordgo.Guild
-		channel *discordgo.Channel
-		command Command
-		name    string
-		args    []string
+		Session *discordgo.Session
+		Event   *discordgo.MessageCreate
+		Guild   *discordgo.Guild
+		Channel *discordgo.Channel
+		Command Command
+		Name    string
+		Args    []string
 	}
 
 	// Command struct per command
 	Command struct {
 		Name            string
-		Func            func(*Context)
+		Func            func(Context)
 		Enabled         bool
 		NSFWOnly        bool
 		IgnoreSelf      bool
@@ -67,8 +67,8 @@ func CheckValidPrereq(s *discordgo.Session, m *discordgo.MessageCreate, c Comman
 }
 
 // RegisterNewCommand creates a new command
-func RegisterNewCommand(k string, c Command) {
-	commands[k] = c
+func RegisterNewCommand(c Command) {
+	commands[c.Name] = c
 	return
 }
 
