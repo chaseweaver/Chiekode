@@ -105,12 +105,13 @@ This is to be passed in for each func call:
 
 ### Context
 This is to be passed in for each func call:
-| Property        | Description                         | Type                                                                   |
-| --------------- |-------------------------------------| -----------------------------------------------------------------------|
-| Session         | *discordgo.Session                  | [Session](https://godoc.org/github.com/bwmarrin/discordgo#Session)     |
-| Event           | *discordgo.MessageCreate            | [Event](https://godoc.org/github.com/bwmarrin/discordgo#MessageCreate) |
-| Guild           | *discordgo.Guild                    | [Guild](https://godoc.org/github.com/bwmarrin/discordgo#Guild)         |
-| Channel         | *discordgo.Channel                  | [Channel](https://godoc.org/github.com/bwmarrin/discordgo#Channel)     |
-| Command         | Command to be run                   | type Command struct                                                    |
-| Name            | Name of the command, case sensitive | [string](https://golang.org/pkg/builtin/#string)                       |
-| Args            | Arguments passed in for the command | [\[\]string{}](https://golang.org/pkg/builtin/#string)                 |
+
+| Property | Description                         | Type                                                                   |
+| -------- |-------------------------------------| -----------------------------------------------------------------------|
+| Session  | *discordgo.Session                  | [Session](https://godoc.org/github.com/bwmarrin/discordgo#Session)     |
+| Event    | *discordgo.MessageCreate            | [Event](https://godoc.org/github.com/bwmarrin/discordgo#MessageCreate) |
+| Guild    | *discordgo.Guild                    | [Guild](https://godoc.org/github.com/bwmarrin/discordgo#Guild)         |
+| Channel  | *discordgo.Channel                  | [Channel](https://godoc.org/github.com/bwmarrin/discordgo#Channel)     |
+| Command  | Command to be run                   | type Command struct                                                    |
+| Name     | Name of the command, case sensitive | [string](https://golang.org/pkg/builtin/#string)                       |
+| Args     | Arguments passed in for the command | [\[\]string{}](https://golang.org/pkg/builtin/#string)                 |
