@@ -32,7 +32,7 @@ func LogCommands(ctx Context) {
 			"Args:      %s"+
 			"\n\n",
 		ctx.Guild.Name, ctx.Guild.ID,
-		ctx.Event.Author.Username+ctx.Event.Author.Discriminator,
+		ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator,
 		ctx.Event.Author.ID, ctx.Name, ctx.Args)
 	return
 }
