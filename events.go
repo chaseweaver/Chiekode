@@ -16,16 +16,20 @@ import (
 
 // MessageCreate triggers on a message that is visible to the bot
 func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+	// Checks if message content begins with prefix
 	if !strings.HasPrefix(m.Content, conf.Prefix) {
 		return
 	}
 
+	// Fetches channel object
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
 		log.Println("Could not get source channel,", err)
 		return
 	}
 
+	// Fetches guild object
 	guild, err := s.State.Guild(channel.GuildID)
 	if err != nil {
 		log.Println("Could not get source guild,", err)
@@ -41,9 +45,13 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		Name:    strings.Split(strings.TrimPrefix(m.Content, conf.Prefix), " ")[0],
 	}
 
+	// Returns a valid command using a name/alias
 	ctx.Command = FetchCommand(ctx.Name)
+
+	// Splits command arguments
 	ctx.Args = strings.Split(ctx.Event.Content, ctx.Command.ArgsDelim)[1:]
 
+	// Checks if the config for the command passes all checks
 	if !CheckValidPrereq(ctx) {
 		return
 	}

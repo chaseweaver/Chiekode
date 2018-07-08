@@ -78,16 +78,6 @@ func HasCommand(k string) bool {
 		return true
 	}
 
-	/*
-		for key := range commands {
-			for val := range commands[key].Aliases {
-				if commands[key].Aliases[val] == k {
-					return true
-				}
-			}
-		}
-	*/
-
 	return false
 }
 
