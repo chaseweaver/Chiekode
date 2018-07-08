@@ -30,7 +30,7 @@ func main() {
 
 	// Establish connection to Redis database
 	// DialRedisDatabaseURL(conf.DatabaseURL)
-	DialRedisDatabaseLocal("tcp", ":6379")
+	// DialRedisDatabaseLocal("tcp", ":6379")
 
 	// Register the MessageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(MessageCreate)
