@@ -69,7 +69,7 @@ func init() {
 		IgnoreBots:      true,
 		Locked:          true,
 		RunIn:           []string{"GuildText", "DM"},
-		Aliases:         []string{},
+		Aliases:         []string{"e"},
 		BotPermissions:  []string{},
 		UserPermissions: []string{},
 		ArgsDelim:       " ",

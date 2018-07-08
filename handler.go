@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"log"
 	"reflect"
 
 	"github.com/bwmarrin/discordgo"
@@ -50,16 +49,16 @@ type (
 var commands = make(map[string]Command)
 
 // CheckValidPrereq checks if command is valid to be ran
-func CheckValidPrereq(s *discordgo.Session, m *discordgo.MessageCreate, c Command) bool {
-	if !c.Enabled {
+func CheckValidPrereq(ctx Context) bool {
+	if !ctx.Command.Enabled {
 		return false
 	}
 
-	if m.Author.ID == s.State.User.ID && c.IgnoreSelf {
+	if ctx.Event.Author.ID == ctx.Session.State.User.ID && ctx.Command.IgnoreSelf {
 		return false
 	}
 
-	if m.Author.Bot && m.Author.ID != s.State.User.ID && c.IgnoreBots {
+	if ctx.Event.Author.Bot && ctx.Event.Author.ID != ctx.Session.State.User.ID && ctx.Command.IgnoreBots {
 		return false
 	}
 
@@ -72,28 +71,6 @@ func RegisterNewCommand(c Command) {
 	return
 }
 
-// IsNSFWOnly returns true if the command requests an NSFW-only channel and the channel is NSFW only
-func IsNSFWOnly(s *discordgo.Session, m *discordgo.MessageCreate, c Command) (bool, error) {
-	channel, err := s.Channel(m.ChannelID)
-	if err != nil {
-		log.Println(err)
-	}
-
-	if channel.NSFW && c.NSFWOnly {
-		return true, nil
-	}
-	return false, err
-}
-
-// RemoveCommand deletes a command
-func RemoveCommand(k string) {
-	if HasCommand(k) {
-		delete(commands, k)
-		return
-	}
-	return
-}
-
 // HasCommand checks if a command is already mapped
 func HasCommand(k string) bool {
 	_, ok := commands[k]
@@ -101,13 +78,15 @@ func HasCommand(k string) bool {
 		return true
 	}
 
-	for key := range commands {
-		for val := range commands[key].Aliases {
-			if commands[key].Aliases[val] == k {
-				return true
+	/*
+		for key := range commands {
+			for val := range commands[key].Aliases {
+				if commands[key].Aliases[val] == k {
+					return true
+				}
 			}
 		}
-	}
+	*/
 
 	return false
 }
@@ -126,12 +105,10 @@ func FetchCommand(k string) Command {
 		}
 	}
 
-	log.Println(commands[k])
-
 	return Command{}
 }
 
-// FetchCommandName returns a valid command if it
+// FetchCommandName returns a valid command if it exists
 func FetchCommandName(k string) string {
 	if HasCommand(commands[k].Name) {
 		return commands[k].Name
@@ -207,4 +184,12 @@ func MemberHasPermission(s *discordgo.Session, guildID string, userID string, pe
 	}
 
 	return false, nil
+}
+
+// IsNSFWOnly returns true if the command requests an NSFW-only channel and the channel is NSFW only
+func IsNSFWOnly(ctx Context, c Command) bool {
+	if ctx.Channel.NSFW && c.NSFWOnly {
+		return true
+	}
+	return false
 }

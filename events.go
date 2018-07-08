@@ -44,7 +44,7 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	ctx.Command = FetchCommand(ctx.Name)
 	ctx.Args = strings.Split(ctx.Event.Content, ctx.Command.ArgsDelim)[1:]
 
-	if !CheckValidPrereq(ctx.Session, ctx.Event, ctx.Command) {
+	if !CheckValidPrereq(ctx) {
 		return
 	}
 
@@ -53,6 +53,9 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		ctx.Command.Name: ctx.Command.Func,
 	}
 
+	// Log commands to console
 	LogCommands(ctx)
-	Call(funcs, ctx.Name, ctx)
+
+	// Call command with args pass-in
+	Call(funcs, FetchCommandName(ctx.Name), ctx)
 }
