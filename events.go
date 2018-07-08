@@ -50,7 +50,7 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	ctx.Args = strings.Split(ctx.Event.Content, ctx.Command.ArgsDelim)[1:]
 
 	// Checks if the config for the command passes all checks
-	if !CheckValidPrereq(ctx) {
+	if !CommandIsValid(ctx) {
 		return
 	}
 

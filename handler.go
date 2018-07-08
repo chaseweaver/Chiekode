@@ -48,15 +48,15 @@ type (
 
 var commands = make(map[string]Command)
 
-// CheckValidPrereq checks if command is valid to be ran
-func CheckValidPrereq(ctx Context) bool {
+// CommandIsValid checks if command is valid to be ran
+func CommandIsValid(ctx Context) bool {
 
 	// Enabled
 	if !ctx.Command.Enabled {
 		return false
 	}
 
-	//IgnoreSelf
+	// IgnoreSelf
 	if ctx.Event.Author.ID == ctx.Session.State.User.ID && ctx.Command.IgnoreSelf {
 		return false
 	}
@@ -76,6 +76,13 @@ func CheckValidPrereq(ctx Context) bool {
 		return false
 	} else if ctx.Channel.Type == discordgo.ChannelTypeDM && !Contains(ctx.Command.RunIn, "DM") {
 		return false
+	}
+
+	// UserPermissions
+	for key := range ctx.Command.UserPermissions {
+		if len(ctx.Command.UserPermissions) != 0 && !MemberHasPermission(ctx, ctx.Command.UserPermissions[key]) {
+			return false
+		}
 	}
 
 	return true
@@ -133,27 +140,100 @@ func FetchCommandName(k string) string {
 }
 
 // MemberHasPermission checks if the guild member has the required permission across all roles
-func MemberHasPermission(s *discordgo.Session, guildID string, userID string, permission int) (bool, error) {
-	mem, err := s.State.Member(guildID, userID)
+func MemberHasPermission(ctx Context, perm string) bool {
+	var permission int
+
+	switch perm {
+	case "BotOwner":
+		return true
+	case "ReadMessages":
+		permission = discordgo.PermissionReadMessages
+	case "SendMessages":
+		permission = discordgo.PermissionSendMessages
+	case "SendTTSMessages":
+		permission = discordgo.PermissionSendTTSMessages
+	case "ManageMessages":
+		permission = discordgo.PermissionManageMessages
+	case "EmbedLinks":
+		permission = discordgo.PermissionEmbedLinks
+	case "AttachFiles":
+		permission = discordgo.PermissionAttachFiles
+	case "ReadMessageHistory":
+		permission = discordgo.PermissionReadMessageHistory
+	case "MentionEveryone":
+		permission = discordgo.PermissionMentionEveryone
+	case "UseExternalEmojis":
+		permission = discordgo.PermissionUseExternalEmojis
+	case "VoiceConnect":
+		permission = discordgo.PermissionVoiceConnect
+	case "VoiceSpeak":
+		permission = discordgo.PermissionVoiceSpeak
+	case "VoiceMuteMembers":
+		permission = discordgo.PermissionVoiceMuteMembers
+	case "VoiceDeafenMembers":
+		permission = discordgo.PermissionVoiceDeafenMembers
+	case "VoiceMoveMembers":
+		permission = discordgo.PermissionVoiceMoveMembers
+	case "VoiceUseVAD":
+		permission = discordgo.PermissionVoiceUseVAD
+	case "ChangeNickname":
+		permission = discordgo.PermissionChangeNickname
+	case "ManageNicknames":
+		permission = discordgo.PermissionManageNicknames
+	case "ManageRoles":
+		permission = discordgo.PermissionManageRoles
+	case "ManageWebhooks":
+		permission = discordgo.PermissionManageWebhooks
+	case "ManageEmojis":
+		permission = discordgo.PermissionManageEmojis
+	case "CreateInstantInvite":
+		permission = discordgo.PermissionCreateInstantInvite
+	case "KickMembers":
+		permission = discordgo.PermissionKickMembers
+	case "BanMembers":
+		permission = discordgo.PermissionBanMembers
+	case "Administrator":
+		permission = discordgo.PermissionAdministrator
+	case "ManageChannels":
+		permission = discordgo.PermissionManageChannels
+	case "ManageServer":
+		permission = discordgo.PermissionManageServer
+	case "AddReactions":
+		permission = discordgo.PermissionAddReactions
+	case "ViewAuditLogs":
+		permission = discordgo.PermissionViewAuditLogs
+	case "AllText":
+		permission = discordgo.PermissionAllText
+	case "AllVoice":
+		permission = discordgo.PermissionAllVoice
+	case "AllChannel":
+		permission = discordgo.PermissionAllChannel
+	case "All":
+		permission = discordgo.PermissionAll
+	default:
+		return false
+	}
+
+	mem, err := ctx.Session.State.Member(ctx.Guild.ID, ctx.Event.Author.ID)
 	if err != nil {
-		if mem, err = s.GuildMember(guildID, userID); err != nil {
-			return false, err
+		if mem, err = ctx.Session.GuildMember(ctx.Guild.ID, ctx.Event.Author.ID); err != nil {
+			return false
 		}
 	}
 
 	// Iterate through the role IDs stored in mem.Roles
 	// to check permissions
 	for _, roleID := range mem.Roles {
-		role, err := s.State.Role(guildID, roleID)
+		role, err := ctx.Session.State.Role(ctx.Guild.ID, roleID)
 		if err != nil {
-			return false, err
+			return false
 		}
 		if role.Permissions&permission != 0 {
-			return true, nil
+			return true
 		}
 	}
 
-	return false, nil
+	return false
 }
 
 // Call func based on name and passes Session, MessageCreate, ...args

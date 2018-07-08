@@ -49,7 +49,6 @@ func LogCommands(ctx Context) {
 			ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator,
 			ctx.Event.Author.ID, ctx.Channel.ID, ctx.Name, ctx.Args)
 	}
-	return
 }
 
 // Contains checks if element is in array

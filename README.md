@@ -52,7 +52,6 @@ Example and templates are shown below.
 	    NSFWOnly:        false,
 	    IgnoreSelf:      true,
         IgnoreBots:      true,
-        Locked:          false,
 	    RunIn:           []string{"Text", "DM"},
 	    Aliases:         []string{"NameOne", "NameTwo"},
 	    UserPermissions: []string{"KickMembers"},
@@ -92,7 +91,6 @@ This is to be passed in for each func call:
 | NSFWOnly        | Whether or not the command is only available in NSFW-marked channels | [bool](https://golang.org/pkg/builtin/#bool)           |
 | IgnoreSelf      | Whether or not the bot will ignore itself                            | [bool](https://golang.org/pkg/builtin/#bool)           |
 | IgnoreBots      | Whether or not the bot will ignore other bots                        | [bool](https://golang.org/pkg/builtin/#bool)           |
-| Locked          | Whether or not the command is for the owner only                     | [bool](https://golang.org/pkg/builtin/#bool)           |
 | RunIn           | Channel type the command can be ran in (DM, Text)                    | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | Aliases         | Other names the command will execute under                           | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | UserPermissions | Permissions the user needs in order for the command to execute       | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
@@ -117,6 +115,7 @@ This is to be passed in for each func call:
 ### UserPermissions
 Permissions the Author of the command needs in order for the bot to run said command (really only need the important ones like KickMembers, etc).
 
+* BotOwner (bot owner, forces all commands to run regardless)
 * ReadMessages
 * SendMessages
 * SendTTSMessages
@@ -145,3 +144,7 @@ Permissions the Author of the command needs in order for the bot to run said com
 * ManageServer
 * AddReactions
 * ViewAuditLogs
+* AllText
+* AllVoice
+* AllChannel
+* All
