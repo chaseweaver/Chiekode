@@ -50,15 +50,34 @@ var commands = make(map[string]Command)
 
 // CheckValidPrereq checks if command is valid to be ran
 func CheckValidPrereq(ctx Context) bool {
+
+	// Enabled
 	if !ctx.Command.Enabled {
 		return false
 	}
 
+	//IgnoreSelf
 	if ctx.Event.Author.ID == ctx.Session.State.User.ID && ctx.Command.IgnoreSelf {
 		return false
 	}
 
-	if ctx.Event.Author.Bot && ctx.Event.Author.ID != ctx.Session.State.User.ID && ctx.Command.IgnoreBots {
+	// IgnoreBots
+	if ctx.Event.Author.Bot && ctx.Command.IgnoreBots && ctx.Event.Author.ID != ctx.Session.State.User.ID {
+		return false
+	}
+
+	// Locked
+	if ctx.Command.Locked && ctx.Event.Author.ID != conf.OwnerID {
+		return false
+	}
+
+	// RunIn Text
+	if ctx.Channel.Type == discordgo.ChannelTypeGuildText && !Contains(ctx.Command.RunIn, "Text") {
+		return false
+	}
+
+	// RunIn DM
+	if ctx.Channel.Type == discordgo.ChannelTypeDM && !Contains(ctx.Command.RunIn, "DM") {
 		return false
 	}
 
@@ -67,8 +86,9 @@ func CheckValidPrereq(ctx Context) bool {
 
 // RegisterNewCommand creates a new command
 func RegisterNewCommand(c Command) {
-	commands[c.Name] = c
-	return
+	if !HasCommand(c.Name) {
+		commands[c.Name] = c
+	}
 }
 
 // HasCommand checks if a command is already mapped
@@ -128,28 +148,6 @@ func Call(m map[string]interface{}, name string, params ...interface{}) (result 
 	}
 	result = f.Call(in)
 	return
-}
-
-// ComesFromDM returns true if a message comes from a DM channel
-func ComesFromDM(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error) {
-	channel, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		if channel, err = s.Channel(m.ChannelID); err != nil {
-			return false, err
-		}
-	}
-	return channel.Type == discordgo.ChannelTypeDM, nil
-}
-
-// ComesFromText returns true if a message comes from a Text channel
-func ComesFromText(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error) {
-	channel, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		if channel, err = s.Channel(m.ChannelID); err != nil {
-			return false, err
-		}
-	}
-	return channel.Type == discordgo.ChannelTypeGuildText, nil
 }
 
 // MemberHasPermission checks if the guild member has the required permission across all roles

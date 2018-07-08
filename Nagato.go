@@ -13,6 +13,7 @@ import (
 // Configuration file contents
 type Configuration struct {
 	Prefix      string
+	OwnerID     string
 	BotToken    string
 	DatabaseURL string
 }

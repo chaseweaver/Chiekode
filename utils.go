@@ -36,3 +36,13 @@ func LogCommands(ctx Context) {
 		ctx.Event.Author.ID, ctx.Name, ctx.Args)
 	return
 }
+
+// Contains checks if element is in array
+func Contains(arr []string, str string) bool {
+	for _, a := range arr {
+		if a == str {
+			return true
+		}
+	}
+	return false
+}
