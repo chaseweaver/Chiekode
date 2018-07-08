@@ -112,6 +112,6 @@ This is to be passed in for each func call:
 | Event    | *discordgo.MessageCreate            | [Event](https://godoc.org/github.com/bwmarrin/discordgo#MessageCreate) |
 | Guild    | *discordgo.Guild                    | [Guild](https://godoc.org/github.com/bwmarrin/discordgo#Guild)         |
 | Channel  | *discordgo.Channel                  | [Channel](https://godoc.org/github.com/bwmarrin/discordgo#Channel)     |
-| Command  | Command to be run                   | type Command struct                                                    |
+| Command  | Command to be run                   | [Command](https://github.com/chaseweaver/Nagato#command)               |                                                    |
 | Name     | Name of the command, case sensitive | [string](https://golang.org/pkg/builtin/#string)                       |
 | Args     | Arguments passed in for the command | [\[\]string{}](https://golang.org/pkg/builtin/#string)                 |
