@@ -15,6 +15,38 @@ import (
  * This package bundles miscellaneous commands for guilds.
  */
 
+func init() {
+	RegisterNewCommand(Command{
+		Name:            "help",
+		Func:            Help,
+		Enabled:         true,
+		NSFWOnly:        false,
+		IgnoreSelf:      true,
+		IgnoreBots:      true,
+		RunIn:           []string{"Text", "DM"},
+		Aliases:         []string{},
+		UserPermissions: []string{},
+		ArgsDelim:       " ",
+		ArgsUsage:       "[command]",
+		Description:     "Displays a helpful help menu.",
+	})
+
+	RegisterNewCommand(Command{
+		Name:            "avatar",
+		Func:            Avatar,
+		Enabled:         true,
+		NSFWOnly:        false,
+		IgnoreSelf:      true,
+		IgnoreBots:      true,
+		RunIn:           []string{"Text", "DM"},
+		Aliases:         []string{"pfp", "icon"},
+		UserPermissions: []string{},
+		ArgsDelim:       " ",
+		ArgsUsage:       "[@member]",
+		Description:     "Fetches the avatar/pfp for the requested member.",
+	})
+}
+
 // Help command returns help per all-basis or per command-basis
 func Help(ctx Context) {
 	if len(ctx.Args) > 0 {

@@ -43,23 +43,27 @@ Example and templates are shown below.
 5. ezpz
 
 # Templates
-* init (to be placed in `init.go`)
+* init (to be placed in `func init() { ... }`)
     ```go
-    RegisterNewCommand(Command{
-        Name:            "Command Name",
-	    Func:            FunctionName,
-	    Enabled:         true,
-	    NSFWOnly:        false,
-	    IgnoreSelf:      true,
-        IgnoreBots:      true,
-	    RunIn:           []string{"Text", "DM"},
-	    Aliases:         []string{"NameOne", "NameTwo"},
-	    UserPermissions: []string{"KickMembers"},
-	    ArgsDelim:       " ",
-	    Usage:           "Example of how to run command here",
-	    Description:     "Description Here",
-  })
-  ```
+    func init() {
+        RegisterNewCommand(Command{
+            Name:            "Command Name",
+            Func:            FunctionName,
+            Enabled:         true,
+            NSFWOnly:        false,
+            IgnoreSelf:      true,
+            IgnoreBots:      true,
+            RunIn:           []string{"Text", "DM"},
+            Aliases:         []string{"NameOne", "NameTwo"},
+            UserPermissions: []string{"KickMembers"},
+            ArgsDelim:       " ",
+            Usage:           "Example of how to run command here",
+            Description:     "Description Here",
+        })
+
+        // RegisterNewCommand(Command{ ...
+    }
+    ```
 
 * Commands (to be placed in the desired `*.go`)
   ```go

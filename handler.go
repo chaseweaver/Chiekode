@@ -141,6 +141,12 @@ func FetchCommandName(k string) string {
 
 // MemberHasPermission checks if the guild member has the required permission across all roles
 func MemberHasPermission(ctx Context, perm string) bool {
+
+	// Check for Guild Owner
+	if ctx.Guild.OwnerID == ctx.Event.Author.ID {
+		return true
+	}
+
 	var permission int
 
 	switch perm {
@@ -210,8 +216,6 @@ func MemberHasPermission(ctx Context, perm string) bool {
 		permission = discordgo.PermissionAllChannel
 	case "All":
 		permission = discordgo.PermissionAll
-	default:
-		return false
 	}
 
 	mem, err := ctx.Session.State.Member(ctx.Guild.ID, ctx.Event.Author.ID)
