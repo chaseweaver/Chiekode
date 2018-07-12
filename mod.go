@@ -1,7 +1,14 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"log"
 	"strings"
+	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/gomodule/redigo/redis"
 )
 
 /**
@@ -13,6 +20,21 @@ import (
 
 func init() {
 	RegisterNewCommand(Command{
+		Name:            "warn",
+		Func:            Warn,
+		Enabled:         true,
+		NSFWOnly:        false,
+		IgnoreSelf:      true,
+		IgnoreBots:      true,
+		RunIn:           []string{"Text"},
+		Aliases:         []string{},
+		UserPermissions: []string{"Bot Owner", "Administrator", "Kick Members"},
+		ArgsDelim:       " ",
+		ArgsUsage:       "<@member|ID>",
+		Description:     "Warns a member via mention or ID.",
+	})
+
+	RegisterNewCommand(Command{
 		Name:            "kick",
 		Func:            Kick,
 		Enabled:         true,
@@ -21,17 +43,149 @@ func init() {
 		IgnoreBots:      true,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{},
-		UserPermissions: []string{"Administrator", "Kick Members"},
+		UserPermissions: []string{"Bot Owner", "Administrator", "Kick Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<golang expression>",
+		ArgsUsage:       "<@member|ID>",
 		Description:     "Kicks a member via mention or ID.",
 	})
+
+	RegisterNewCommand(Command{
+		Name:            "ban",
+		Func:            Ban,
+		Enabled:         true,
+		NSFWOnly:        false,
+		IgnoreSelf:      true,
+		IgnoreBots:      true,
+		RunIn:           []string{"Text"},
+		Aliases:         []string{},
+		UserPermissions: []string{"Bot Owner", "Administrator", "Ban Members"},
+		ArgsDelim:       " ",
+		ArgsUsage:       "<@member|ID>",
+		Description:     "Bans a member via mention or ID.",
+	})
+
+	RegisterNewCommand(Command{
+		Name:            "check",
+		Func:            Check,
+		Enabled:         true,
+		NSFWOnly:        false,
+		IgnoreSelf:      true,
+		IgnoreBots:      true,
+		RunIn:           []string{"Text"},
+		Aliases:         []string{},
+		UserPermissions: []string{"Bot Owner", "Administrator", "Kick Members"},
+		ArgsDelim:       " ",
+		ArgsUsage:       "<@member|ID>",
+		Description:     "Checks the warnings, mutes, kicks, and bans of a mentioned user.",
+	})
+}
+
+// Warn command will warn a mentioned user and log it to the redis database
+func Warn(ctx Context) {
+	reason := "N/A"
+
+	if len(ctx.Args) != 0 {
+		reason = strings.Join(ctx.Args[0:], " ")
+	}
+
+	for key := range ctx.Event.Message.Mentions {
+		mem := ctx.Event.Message.Mentions[key].ID
+		LogWarning(ctx, mem, reason)
+	}
 }
 
 // Kick command will kick a mentioned user and log it to the redis database
 func Kick(ctx Context) {
+	reason := "N/A"
+
+	if len(ctx.Args) != 0 {
+		reason = strings.Join(ctx.Args[0:], " ")
+	}
+
 	for key := range ctx.Event.Message.Mentions {
 		mem := ctx.Event.Message.Mentions[key].ID
-		ctx.Session.GuildMemberDeleteWithReason(ctx.Guild.ID, mem, strings.Join(ctx.Args, " "))
+		ctx.Session.GuildMemberDeleteWithReason(ctx.Guild.ID, mem, reason)
+		LogKick(ctx, mem, reason)
+	}
+}
+
+// Ban command will ban a mentioned user and log it to the redis database
+func Ban(ctx Context) {
+	reason := "N/A"
+
+	if len(ctx.Args) != 0 {
+		reason = strings.Join(ctx.Args[0:], " ")
+	}
+
+	for key := range ctx.Event.Message.Mentions {
+		mem := ctx.Event.Message.Mentions[key].ID
+		ctx.Session.GuildBanCreateWithReason(ctx.Guild.ID, mem, reason, 0)
+		LogBan(ctx, mem, reason)
+	}
+}
+
+// Check command will check the user's warnings, mutes, kicks, bans, nicknames, and usernames, and return it from the redis database
+func Check(ctx Context) {
+
+	if len(ctx.Args) == 0 {
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "Invalid usage! Please `@mention` (a) member(s)!")
+	}
+
+	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+	if err != nil {
+		log.Println(err)
+	}
+
+	var g Guild
+	err = json.Unmarshal(data, &g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	for key := range ctx.Event.Message.Mentions {
+		mem := ctx.Event.Message.Mentions[key]
+
+		for k := range g.Users {
+			if g.Users[k].ID == mem.ID {
+
+				embed := &discordgo.MessageEmbed{
+					Title:       fmt.Sprintf("%s#%s / %s", mem.Username, mem.Discriminator, mem.ID),
+					Color:       0x100,
+					Description: fmt.Sprintf("Run `%scheck @member [warnings/mutes/kicks/bans]` for a complete list of information.", g.GuildPrefix),
+					Thumbnail: &discordgo.MessageEmbedThumbnail{
+						URL:    mem.AvatarURL("2048"),
+						Width:  2048,
+						Height: 2048,
+					},
+					Fields: []*discordgo.MessageEmbedField{
+						&discordgo.MessageEmbedField{
+							Name:   fmt.Sprintf("⮞ Total Warnings"),
+							Value:  fmt.Sprintf("%d", len(g.Users[k].Warnings)),
+							Inline: false,
+						},
+						&discordgo.MessageEmbedField{
+							Name:   fmt.Sprintf("⮞ Total Mutes"),
+							Value:  fmt.Sprintf("%d", len(g.Users[k].Mutes)),
+							Inline: false,
+						},
+						&discordgo.MessageEmbedField{
+							Name:   fmt.Sprintf("⮞ Total Kicks"),
+							Value:  fmt.Sprintf("%d", len(g.Users[k].Kicks)),
+							Inline: false,
+						},
+						&discordgo.MessageEmbedField{
+							Name:   fmt.Sprintf("⮞ Total Bans"),
+							Value:  fmt.Sprintf("%d", len(g.Users[k].Bans)),
+							Inline: false,
+						},
+					},
+					Timestamp: time.Now().Format(time.RFC3339),
+				}
+
+				ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+			}
+		}
+
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -108,7 +109,6 @@ func DialNewPoolURL(url string) *redis.Pool {
 
 // DeleteGuild removes a guild from the database
 func DeleteGuild(guild *discordgo.Guild) (interface{}, error) {
-	p := pool.Get()
 	n, err := p.Do("DEL", guild.ID)
 	if err != nil {
 		log.Println(err)
@@ -119,8 +119,7 @@ func DeleteGuild(guild *discordgo.Guild) (interface{}, error) {
 
 // GuildExists returns true if guild key exists, false if not
 func GuildExists(guild *discordgo.Guild) bool {
-	c := pool.Get()
-	n, err := c.Do("EXISTS", guild.ID)
+	n, err := p.Do("EXISTS", guild.ID)
 	if err != nil {
 		log.Println(err)
 	}
@@ -151,8 +150,7 @@ func RegisterNewGuild(guild *discordgo.Guild) (interface{}, error) {
 		log.Println(err)
 	}
 
-	c := pool.Get()
-	n, err := c.Do("SETNX", guild.ID, serialized)
+	n, err := p.Do("SETNX", guild.ID, serialized)
 	if err != nil {
 		log.Println(err)
 	}
@@ -190,4 +188,112 @@ func InitializeUsers(guild *discordgo.Guild) []User {
 	}
 
 	return user
+}
+
+// LogWarning logs a warning to a user's record in the database
+func LogWarning(ctx Context, userID string, reason string) {
+	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var g Guild
+	err = json.Unmarshal(data, &g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	for k := range g.Users {
+		if g.Users[k].ID == userID {
+			g.Users[k].Warnings = append(g.Users[k].Warnings, Warnings{
+				Channel: fmt.Sprintf("%s / %s", ctx.Channel.Name, ctx.Channel.ID),
+				Reason:  reason,
+				Time:    time.Now(),
+			})
+		}
+	}
+
+	serialized, err := json.Marshal(g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	_, err = p.Do("SET", ctx.Guild.ID, serialized)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+// LogKick logs a kick to a user's record in the database
+func LogKick(ctx Context, userID string, reason string) {
+	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var g Guild
+	err = json.Unmarshal(data, &g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	for k := range g.Users {
+		if g.Users[k].ID == userID {
+			g.Users[k].Kicks = append(g.Users[k].Kicks, Kicks{
+				Channel: fmt.Sprintf("%s / %s", ctx.Channel.Name, ctx.Channel.ID),
+				Reason:  reason,
+				Time:    time.Now(),
+			})
+		}
+	}
+
+	serialized, err := json.Marshal(g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	_, err = p.Do("SET", ctx.Guild.ID, serialized)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+// LogBan logs a ban to a user's record in the database
+func LogBan(ctx Context, userID string, reason string) {
+	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var g Guild
+	err = json.Unmarshal(data, &g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	for k := range g.Users {
+		if g.Users[k].ID == userID {
+			g.Users[k].Bans = append(g.Users[k].Bans, Bans{
+				Channel: fmt.Sprintf("%s / %s", ctx.Channel.Name, ctx.Channel.ID),
+				Reason:  reason,
+				Time:    time.Now(),
+			})
+		}
+	}
+
+	serialized, err := json.Marshal(g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	_, err = p.Do("SET", ctx.Guild.ID, serialized)
+	if err != nil {
+		log.Println(err)
+	}
 }

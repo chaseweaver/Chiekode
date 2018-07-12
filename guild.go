@@ -107,7 +107,6 @@ func Settings(ctx Context) {
 // Set allows configration of database guild settings
 func Set(ctx Context) {
 
-	p := pool.Get()
 	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
 	if err != nil {
 		log.Println(err)

@@ -21,6 +21,7 @@ type Configuration struct {
 var conf = Configuration{}
 var err = gonfig.GetConf("config.json", &conf)
 var pool = DialNewPool("tcp", ":6379")
+var p = pool.Get()
 
 func main() {
 	// Create a new Discord session using the provided bot token.
@@ -47,5 +48,6 @@ func main() {
 	<-sc
 
 	// Cleanly close down the Discord session.
+	p.Close()
 	dg.Close()
 }

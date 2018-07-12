@@ -35,7 +35,6 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			log.Println(err)
 		}
 
-		p := pool.Get()
 		data, err := redis.Bytes(p.Do("GET", guild.ID))
 
 		if err != nil {
