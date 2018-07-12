@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -33,11 +35,11 @@ func LogCommands(ctx Context) {
 				"Guild:     %s / %s\n"+
 				"Channel:   %s / %s\n"+
 				"Command:   %s\n"+
-				"Args:      %s"+
+				"Args:      (%d)%s"+
 				"\n\n",
 			ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID,
 			ctx.Guild.Name, ctx.Guild.ID, ctx.Channel.Name, ctx.Channel.ID,
-			ctx.Name, ctx.Args)
+			ctx.Name, len(ctx.Args), ctx.Args)
 	} else {
 		log.Printf(
 			"\n"+
@@ -59,4 +61,15 @@ func Contains(arr []string, str string) bool {
 		}
 	}
 	return false
+}
+
+// CreationTime returns the time a snowflake was created
+func CreationTime(ID string) (t time.Time, err error) {
+	i, err := strconv.ParseInt(ID, 10, 64)
+	if err != nil {
+		return
+	}
+	timestamp := (i >> 22) + 1420070400000
+	t = time.Unix(timestamp/1000, 0)
+	return
 }

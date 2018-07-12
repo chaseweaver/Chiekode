@@ -150,69 +150,69 @@ func MemberHasPermission(ctx Context, perm string) bool {
 	var permission int
 
 	switch perm {
-	case "BotOwner":
+	case "Bot Owner":
 		return true
-	case "ReadMessages":
+	case "Read Messages":
 		permission = discordgo.PermissionReadMessages
-	case "SendMessages":
+	case "Send Messages":
 		permission = discordgo.PermissionSendMessages
-	case "SendTTSMessages":
+	case "Send TTS Messages":
 		permission = discordgo.PermissionSendTTSMessages
-	case "ManageMessages":
+	case "Manage Messages":
 		permission = discordgo.PermissionManageMessages
-	case "EmbedLinks":
+	case "Embed Links":
 		permission = discordgo.PermissionEmbedLinks
-	case "AttachFiles":
+	case "Attach Files":
 		permission = discordgo.PermissionAttachFiles
-	case "ReadMessageHistory":
+	case "Read Message History":
 		permission = discordgo.PermissionReadMessageHistory
-	case "MentionEveryone":
+	case "Mention Everyone":
 		permission = discordgo.PermissionMentionEveryone
-	case "UseExternalEmojis":
+	case "Use External Emojis":
 		permission = discordgo.PermissionUseExternalEmojis
-	case "VoiceConnect":
+	case "Voice Connect":
 		permission = discordgo.PermissionVoiceConnect
-	case "VoiceSpeak":
+	case "Voice Speak":
 		permission = discordgo.PermissionVoiceSpeak
-	case "VoiceMuteMembers":
+	case "Voice Mute Members":
 		permission = discordgo.PermissionVoiceMuteMembers
-	case "VoiceDeafenMembers":
+	case "Voice Deafen Members":
 		permission = discordgo.PermissionVoiceDeafenMembers
-	case "VoiceMoveMembers":
+	case "Voice Move Members":
 		permission = discordgo.PermissionVoiceMoveMembers
-	case "VoiceUseVAD":
+	case "Voice Use VAD":
 		permission = discordgo.PermissionVoiceUseVAD
-	case "ChangeNickname":
+	case "Change Nickname":
 		permission = discordgo.PermissionChangeNickname
-	case "ManageNicknames":
+	case "Manage Nicknames":
 		permission = discordgo.PermissionManageNicknames
-	case "ManageRoles":
+	case "Manage Roles":
 		permission = discordgo.PermissionManageRoles
-	case "ManageWebhooks":
+	case "Manage Webhooks":
 		permission = discordgo.PermissionManageWebhooks
-	case "ManageEmojis":
+	case "Manage Emojis":
 		permission = discordgo.PermissionManageEmojis
-	case "CreateInstantInvite":
+	case "Create Instant Invite":
 		permission = discordgo.PermissionCreateInstantInvite
-	case "KickMembers":
+	case "Kick Members":
 		permission = discordgo.PermissionKickMembers
-	case "BanMembers":
+	case "Ban Members":
 		permission = discordgo.PermissionBanMembers
 	case "Administrator":
 		permission = discordgo.PermissionAdministrator
-	case "ManageChannels":
+	case "Manage Channels":
 		permission = discordgo.PermissionManageChannels
-	case "ManageServer":
+	case "Manage Server":
 		permission = discordgo.PermissionManageServer
-	case "AddReactions":
+	case "Add Reactions":
 		permission = discordgo.PermissionAddReactions
-	case "ViewAuditLogs":
+	case "View Audit Logs":
 		permission = discordgo.PermissionViewAuditLogs
-	case "AllText":
+	case "All Text":
 		permission = discordgo.PermissionAllText
-	case "AllVoice":
+	case "All Voice":
 		permission = discordgo.PermissionAllVoice
-	case "AllChannel":
+	case "All Channel":
 		permission = discordgo.PermissionAllChannel
 	case "All":
 		permission = discordgo.PermissionAll

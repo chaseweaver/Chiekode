@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
+	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/gomodule/redigo/redis"
 )
 
 /**
@@ -15,14 +18,37 @@ import (
 
 // MessageCreate triggers on a message that is visible to the bot
 func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// Checks if message content begins with prefix
-	if !strings.HasPrefix(m.Content, conf.Prefix) {
-		return
-	}
+	// Default bot prefix
+	prefix := conf.Prefix
 
 	// Fetches channel object
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
+		return
+	}
+
+	// Gets the guild prefix from database
+	if channel.Type == discordgo.ChannelTypeGuildText {
+		guild, err := s.State.Guild(channel.GuildID)
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		p := pool.Get()
+		data, err := redis.Bytes(p.Do("GET", guild.ID))
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		var g Guild
+		err = json.Unmarshal(data, &g)
+		prefix = g.GuildPrefix
+	}
+
+	// Checks if message content begins with prefix
+	if !strings.HasPrefix(m.Content, prefix) {
 		return
 	}
 
@@ -31,7 +57,7 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		Session: s,
 		Event:   m,
 		Channel: channel,
-		Name:    strings.Split(strings.TrimPrefix(m.Content, conf.Prefix), " ")[0],
+		Name:    strings.Split(strings.TrimPrefix(m.Content, prefix), " ")[0],
 	}
 
 	// Fetches guild object if text channel is NOT a DM
@@ -43,11 +69,20 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		ctx.Guild = guild
 	}
 
+	// Registers a new guild if not done already
+	RegisterNewGuild(ctx.Guild)
+
 	// Returns a valid command using a name/alias
 	ctx.Command = FetchCommand(ctx.Name)
 
 	// Splits command arguments
-	ctx.Args = strings.Split(ctx.Event.Content, ctx.Command.ArgsDelim)[1:]
+	tmp := strings.TrimPrefix(m.Content, prefix)
+
+	if len(strings.Split(tmp, ctx.Command.ArgsDelim)) > 0 {
+		ctx.Args = strings.Split(tmp, ctx.Command.ArgsDelim)[1:]
+	} else {
+		ctx.Args = nil
+	}
 
 	// Checks if the config for the command passes all checks
 	if !CommandIsValid(ctx) {

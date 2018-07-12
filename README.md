@@ -47,15 +47,15 @@ Example and templates are shown below.
     ```go
     func init() {
         RegisterNewCommand(Command{
-            Name:            "Command Name",
+            Name:            "command name",
             Func:            FunctionName,
             Enabled:         true,
             NSFWOnly:        false,
             IgnoreSelf:      true,
             IgnoreBots:      true,
             RunIn:           []string{"Text", "DM"},
-            Aliases:         []string{"NameOne", "NameTwo"},
-            UserPermissions: []string{"KickMembers"},
+            Aliases:         []string{"nameone", "nametwo"},
+            UserPermissions: []string{"Kick Members"},
             ArgsDelim:       " ",
             Usage:           "Example of how to run command here",
             Description:     "Description Here",
@@ -119,36 +119,36 @@ This is to be passed in for each func call:
 ### UserPermissions
 Permissions the Author of the command needs in order for the bot to run said command (really only need the important ones like KickMembers, etc).
 
-* BotOwner (bot owner, forces all commands to run regardless)
-* ReadMessages
-* SendMessages
-* SendTTSMessages
-* ManageMessages
-* EmbedLinks
-* AttachFiles
-* ReadMessageHistory
-* MentionEveryone
-* UseExternalEmojis
-* VoiceConnect
-* VoiceSpeak
-* VoiceMuteMembers
-* VoiceDeafenMembers
-* VoiceMoveMembers
-* VoiceUseVAD
-* ChangeNickname
-* ManageNicknames
-* ManageRoles
-* ManageWebhooks
-* ManageEmojis
-* CreateInstantInvite
-* KickMembers
-* BanMembers
+* Bot Owner (bot owner, forces all commands to run regardless)
+* Read Messages
+* Send Messages
+* Send TTS Messages
+* Manage Messages
+* Embed Links
+* Attach Files
+* Read Message History
+* Mention Everyone
+* Use External Emojis
+* Voice Connect
+* Voice Speak
+* Voice Mute Members
+* Voice Deafen Members
+* Voice Move Members
+* Voice Use VAD
+* Change Nickname
+* Manage Nicknames
+* Manage Roles
+* Manage Webhooks
+* Manage Emojis
+* Create Instant Invite
+* Kick Members
+* Ban Members
 * Administrator
-* ManageChannels
-* ManageServer
-* AddReactions
-* ViewAuditLogs
-* AllText
-* AllVoice
-* AllChannel
+* Manage Channels
+* Manage Server
+* Add Reactions
+* View Audit Logs
+* All Text
+* All Voice
+* All Channel
 * All

@@ -21,7 +21,7 @@ func init() {
 		IgnoreBots:      true,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{},
-		UserPermissions: []string{"Administrator", "KickMembers"},
+		UserPermissions: []string{"Administrator", "Kick Members"},
 		ArgsDelim:       " ",
 		ArgsUsage:       "<golang expression>",
 		Description:     "Kicks a member via mention or ID.",

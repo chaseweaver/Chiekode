@@ -1,6 +1,7 @@
 bin/
 pkg/
 .temp/
+dump.rdb
 src/
 config.json
 Nagato
