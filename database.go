@@ -215,9 +215,9 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	for k := range g.Users {
-		if g.Users[k].ID == mem.ID {
-			g.Users[k].Warnings = append(g.Users[k].Warnings, Warnings{
+	for _, usr := range g.Users {
+		if usr.ID == mem.ID {
+			usr.Warnings = append(usr.Warnings, Warnings{
 				Author:   fmt.Sprintf("%s / %s", ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID),
 				Member:   fmt.Sprintf("%s / %s", mem.Username+"#"+mem.Discriminator, mem.ID),
 				MemberID: mem.ID,
@@ -254,9 +254,9 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	for k := range g.Users {
-		if g.Users[k].ID == mem.ID {
-			g.Users[k].Kicks = append(g.Users[k].Kicks, Kicks{
+	for _, usr := range g.Users {
+		if usr.ID == mem.ID {
+			usr.Kicks = append(usr.Kicks, Kicks{
 				Author:   fmt.Sprintf("%s / %s", ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID),
 				Member:   fmt.Sprintf("%s / %s", mem.Username+"#"+mem.Discriminator, mem.ID),
 				MemberID: mem.ID,
@@ -293,9 +293,9 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	for k := range g.Users {
-		if g.Users[k].ID == mem.ID {
-			g.Users[k].Bans = append(g.Users[k].Bans, Bans{
+	for _, usr := range g.Users {
+		if usr.ID == mem.ID {
+			usr.Bans = append(usr.Bans, Bans{
 				Author:   fmt.Sprintf("%s / %s", ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID),
 				Member:   fmt.Sprintf("%s / %s", mem.Username+"#"+mem.Discriminator, mem.ID),
 				MemberID: mem.ID,
