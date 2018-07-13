@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -81,17 +80,18 @@ func Help(ctx Context) {
 		}
 		ctx.Session.ChannelMessageSend(ctx.Channel.ID, FormatString(str, "asciidoc"))
 	}
-	return
 }
 
 // Avatar command will return member's avatar
 func Avatar(ctx Context) {
 
+	mem := FetchMessageContentUsers(ctx)
+
 	// Author avatar if no members are mentioned
-	if len(ctx.Event.Message.Mentions) == 0 {
+	if len(ctx.Args) == 0 {
 		ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, &discordgo.MessageEmbed{
 			Title: fmt.Sprintf("%s's Avatar", ctx.Event.Author.Username),
-			Color: rand.Intn(32767-(-32768)+1) - 32768,
+			Color: RandomInt(0, 16777215),
 			Image: &discordgo.MessageEmbedImage{
 				URL:    ctx.Event.Author.AvatarURL("2048"),
 				Width:  2048,
@@ -102,17 +102,20 @@ func Avatar(ctx Context) {
 	}
 
 	// Returns every mentioned member's avatar
-	for u := range ctx.Event.Message.Mentions {
+	for u := range mem {
 		ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, &discordgo.MessageEmbed{
-			Title: fmt.Sprintf("%s's Avatar", ctx.Event.Message.Mentions[u].Username),
-			Color: rand.Intn(32767-(-32768)+1) - 32768,
+			Title: fmt.Sprintf("%s's Avatar", mem[u].Username),
+			Color: RandomInt(0, 16777215),
 			Image: &discordgo.MessageEmbedImage{
-				URL:    ctx.Event.Message.Mentions[u].AvatarURL("2048"),
+				URL:    mem[u].AvatarURL("2048"),
 				Width:  2048,
 				Height: 2048,
 			},
-			URL: ctx.Event.Message.Mentions[u].AvatarURL("2048"),
+			URL: mem[u].AvatarURL("2048"),
 		})
 	}
-	return
+
+	if len(mem) == 0 && len(ctx.Args) != 0 {
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
+	}
 }

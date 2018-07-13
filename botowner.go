@@ -74,6 +74,21 @@ func init() {
 		ArgsUsage:       "",
 		Description:     "Removes a guild from the database if existent",
 	})
+
+	RegisterNewCommand(Command{
+		Name:            "test",
+		Func:            Test,
+		Enabled:         true,
+		NSFWOnly:        false,
+		IgnoreSelf:      true,
+		IgnoreBots:      true,
+		RunIn:           []string{"DM", "Text"},
+		Aliases:         []string{},
+		UserPermissions: []string{"Bot Owner"},
+		ArgsDelim:       " ",
+		ArgsUsage:       "",
+		Description:     "Bot owner testing function",
+	})
 }
 
 // Ping command will return Pong!
@@ -125,4 +140,12 @@ func RemoveGuild(ctx Context) {
 	}
 
 	ctx.Session.ChannelMessageSend(ctx.Channel.ID, "```Guild has successfully been removed.```")
+}
+
+// Test is a bot owner test command
+func Test(ctx Context) {
+	// log.Println(FetchMessageContentUsers(ctx))
+	for i := 0; i < 1000; i++ {
+		log.Print(RandomInt(0, 16777215))
+	}
 }

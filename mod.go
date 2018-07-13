@@ -30,7 +30,7 @@ func init() {
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Administrator", "Kick Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<@member|ID>",
+		ArgsUsage:       "<@member(s)|ID(s)>",
 		Description:     "Warns a member via mention or ID.",
 	})
 
@@ -45,7 +45,7 @@ func init() {
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Administrator", "Kick Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<@member|ID>",
+		ArgsUsage:       "<@member(s)|ID(s)>",
 		Description:     "Kicks a member via mention or ID.",
 	})
 
@@ -60,7 +60,7 @@ func init() {
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Administrator", "Ban Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<@member|ID>",
+		ArgsUsage:       "<@member(s)|ID(s)>",
 		Description:     "Bans a member via mention or ID.",
 	})
 
@@ -75,7 +75,7 @@ func init() {
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Administrator", "Kick Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<@member|ID>",
+		ArgsUsage:       "<@member(s)|ID(s)>",
 		Description:     "Checks the warnings, mutes, kicks, and bans of a mentioned user.",
 	})
 }
@@ -88,9 +88,13 @@ func Warn(ctx Context) {
 		reason = strings.Join(ctx.Args[0:], " ")
 	}
 
-	for key := range ctx.Event.Message.Mentions {
-		mem := ctx.Event.Message.Mentions[key].ID
-		LogWarning(ctx, mem, reason)
+	mem := FetchMessageContentUsers(ctx)
+	if len(mem) == 0 {
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
+	}
+
+	for _, usr := range mem {
+		LogWarning(ctx, usr, reason)
 	}
 }
 
@@ -102,10 +106,14 @@ func Kick(ctx Context) {
 		reason = strings.Join(ctx.Args[0:], " ")
 	}
 
-	for key := range ctx.Event.Message.Mentions {
-		mem := ctx.Event.Message.Mentions[key].ID
-		ctx.Session.GuildMemberDeleteWithReason(ctx.Guild.ID, mem, reason)
-		LogKick(ctx, mem, reason)
+	mem := FetchMessageContentUsers(ctx)
+	if len(mem) == 0 {
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
+	}
+
+	for _, member := range mem {
+		ctx.Session.GuildMemberDeleteWithReason(ctx.Guild.ID, member.ID, reason)
+		LogKick(ctx, member, reason)
 	}
 }
 
@@ -117,10 +125,14 @@ func Ban(ctx Context) {
 		reason = strings.Join(ctx.Args[0:], " ")
 	}
 
-	for key := range ctx.Event.Message.Mentions {
-		mem := ctx.Event.Message.Mentions[key].ID
-		ctx.Session.GuildBanCreateWithReason(ctx.Guild.ID, mem, reason, 0)
-		LogBan(ctx, mem, reason)
+	mem := FetchMessageContentUsers(ctx)
+	if len(mem) == 0 {
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
+	}
+
+	for _, member := range mem {
+		ctx.Session.GuildBanCreateWithReason(ctx.Guild.ID, member.ID, reason, 0)
+		LogBan(ctx, member, reason)
 	}
 }
 
@@ -151,7 +163,7 @@ func Check(ctx Context) {
 
 				embed := &discordgo.MessageEmbed{
 					Title:       fmt.Sprintf("%s#%s / %s", mem.Username, mem.Discriminator, mem.ID),
-					Color:       0x100,
+					Color:       RandomInt(0, 16777215),
 					Description: fmt.Sprintf("Run `%scheck @member [warnings/mutes/kicks/bans]` for a complete list of information.", g.GuildPrefix),
 					Thumbnail: &discordgo.MessageEmbedThumbnail{
 						URL:    mem.AvatarURL("2048"),

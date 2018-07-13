@@ -50,31 +50,43 @@ type User struct {
 
 // Warnings information for a user
 type Warnings struct {
-	Channel string
-	Reason  string
-	Time    time.Time
+	Author   string
+	Member   string
+	MemberID string
+	Channel  string
+	Reason   string
+	Time     time.Time
 }
 
 // Kicks information for a user
 type Kicks struct {
-	Channel string
-	Reason  string
-	Time    time.Time
+	Author   string
+	Member   string
+	MemberID string
+	Channel  string
+	Reason   string
+	Time     time.Time
 }
 
 // Bans information for a user
 type Bans struct {
-	Channel string
-	Reason  string
-	Time    time.Time
+	Author   string
+	Member   string
+	MemberID string
+	Channel  string
+	Reason   string
+	Time     time.Time
 }
 
 // Mutes information for a user
 type Mutes struct {
-	Channel string
-	Reason  string
-	Time    time.Time
-	Length  time.Duration
+	Author   string
+	Member   string
+	MemberID string
+	Channel  string
+	Reason   string
+	Time     time.Time
+	Length   time.Duration
 }
 
 // DialNewPool connectes to a local Redis database by port pass-in
@@ -160,7 +172,6 @@ func RegisterNewGuild(guild *discordgo.Guild) (interface{}, error) {
 
 // InitializeUsers fetches user defaults upon guild initialization
 func InitializeUsers(guild *discordgo.Guild) []User {
-	// mem, err := ctx.Session.State.Member(ctx.Guild.ID, ctx.Event.Author.ID)
 	user := []User{}
 	for _, usr := range guild.Members {
 		age, err := CreationTime(usr.User.ID)
@@ -191,7 +202,7 @@ func InitializeUsers(guild *discordgo.Guild) []User {
 }
 
 // LogWarning logs a warning to a user's record in the database
-func LogWarning(ctx Context, userID string, reason string) {
+func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
 	if err != nil {
 		panic(err.Error())
@@ -205,11 +216,14 @@ func LogWarning(ctx Context, userID string, reason string) {
 	}
 
 	for k := range g.Users {
-		if g.Users[k].ID == userID {
+		if g.Users[k].ID == mem.ID {
 			g.Users[k].Warnings = append(g.Users[k].Warnings, Warnings{
-				Channel: fmt.Sprintf("%s / %s", ctx.Channel.Name, ctx.Channel.ID),
-				Reason:  reason,
-				Time:    time.Now(),
+				Author:   fmt.Sprintf("%s / %s", ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID),
+				Member:   fmt.Sprintf("%s / %s", mem.Username+"#"+mem.Discriminator, mem.ID),
+				MemberID: mem.ID,
+				Channel:  fmt.Sprintf("%s / %s", ctx.Channel.Name, ctx.Channel.ID),
+				Reason:   reason,
+				Time:     time.Now(),
 			})
 		}
 	}
@@ -227,7 +241,7 @@ func LogWarning(ctx Context, userID string, reason string) {
 }
 
 // LogKick logs a kick to a user's record in the database
-func LogKick(ctx Context, userID string, reason string) {
+func LogKick(ctx Context, mem *discordgo.User, reason string) {
 	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
 	if err != nil {
 		panic(err.Error())
@@ -241,11 +255,14 @@ func LogKick(ctx Context, userID string, reason string) {
 	}
 
 	for k := range g.Users {
-		if g.Users[k].ID == userID {
+		if g.Users[k].ID == mem.ID {
 			g.Users[k].Kicks = append(g.Users[k].Kicks, Kicks{
-				Channel: fmt.Sprintf("%s / %s", ctx.Channel.Name, ctx.Channel.ID),
-				Reason:  reason,
-				Time:    time.Now(),
+				Author:   fmt.Sprintf("%s / %s", ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID),
+				Member:   fmt.Sprintf("%s / %s", mem.Username+"#"+mem.Discriminator, mem.ID),
+				MemberID: mem.ID,
+				Channel:  fmt.Sprintf("%s / %s", ctx.Channel.Name, ctx.Channel.ID),
+				Reason:   reason,
+				Time:     time.Now(),
 			})
 		}
 	}
@@ -263,7 +280,7 @@ func LogKick(ctx Context, userID string, reason string) {
 }
 
 // LogBan logs a ban to a user's record in the database
-func LogBan(ctx Context, userID string, reason string) {
+func LogBan(ctx Context, mem *discordgo.User, reason string) {
 	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
 	if err != nil {
 		panic(err.Error())
@@ -277,11 +294,14 @@ func LogBan(ctx Context, userID string, reason string) {
 	}
 
 	for k := range g.Users {
-		if g.Users[k].ID == userID {
+		if g.Users[k].ID == mem.ID {
 			g.Users[k].Bans = append(g.Users[k].Bans, Bans{
-				Channel: fmt.Sprintf("%s / %s", ctx.Channel.Name, ctx.Channel.ID),
-				Reason:  reason,
-				Time:    time.Now(),
+				Author:   fmt.Sprintf("%s / %s", ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID),
+				Member:   fmt.Sprintf("%s / %s", mem.Username+"#"+mem.Discriminator, mem.ID),
+				MemberID: mem.ID,
+				Channel:  fmt.Sprintf("%s / %s", ctx.Channel.Name, ctx.Channel.ID),
+				Reason:   reason,
+				Time:     time.Now(),
 			})
 		}
 	}
