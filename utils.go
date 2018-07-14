@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"regexp"
 	"strconv"
@@ -24,14 +25,25 @@ func RandomInt(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-// Reply shorthand
-func Reply(ctx Context, s string) {
-	ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("<@!%s>, %s", ctx.Event.Author.ID, s))
-}
-
 // FormatString adds string formatting (i.e. asciidoc)
 func FormatString(s string, t string) string {
 	return fmt.Sprintf("```%s\n"+s+"```", t)
+}
+
+// DeleteMessageWithTime deletes a message by ID after a given time in milliseconds
+func DeleteMessageWithTime(ctx Context, ID string, t float32) {
+	time.Sleep(time.Duration(t) * time.Millisecond)
+
+	err := ctx.Session.ChannelMessageDelete(ctx.Channel.ID, ID)
+
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+// Round will take an input and round it to the nearest unit number
+func Round(x, unit float64) float64 {
+	return math.Round(x/unit) * unit
 }
 
 // LogCommands logs commands being run
@@ -88,7 +100,7 @@ func ParseMessageContentIDs(content string) []string {
 	return re.FindAllString(content, -1)
 }
 
-// FetchMessageContentUsers returns an array of Discord Users found within a string by ID and Mention
+// FetchMessageContentUsers returns an array of Discord Users found within a string by ID and Mention with guild restriction
 func FetchMessageContentUsers(ctx Context) []*discordgo.User {
 	var arr []*discordgo.User
 	re := regexp.MustCompile("[0-9]{18,18}")
@@ -107,5 +119,20 @@ func FetchMessageContentUsers(ctx Context) []*discordgo.User {
 		}
 	}
 
+	return arr
+}
+
+// FetchMessageContentUsersAllGuilds returns an array of Discord Users found within a string by ID and Mention without guild restriction
+func FetchMessageContentUsersAllGuilds(ctx Context) []*discordgo.User {
+	var arr []*discordgo.User
+	re := regexp.MustCompile("[0-9]{18,18}")
+	for _, value := range re.FindAllString(ctx.Event.Message.Content, -1) {
+		mem, err := ctx.Session.User(value)
+
+		if err != nil {
+			log.Println(err)
+		}
+		arr = append(arr, mem)
+	}
 	return arr
 }

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/novalagung/golpal"
 )
@@ -91,9 +93,10 @@ func init() {
 	})
 }
 
-// Ping command will return Pong!
+// Ping command will return Pong! with the last heartbeat
 func Ping(ctx Context) {
-	ctx.Session.ChannelMessageSend(ctx.Channel.ID, "🏓 Pong!")
+	t := time.Now().Sub(ctx.Session.LastHeartbeatAck) / 1000
+	ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("🏓 Pong! Heatbeat: `%s`", t))
 }
 
 // Eval is the bot's evaluate command for complex functions
@@ -144,8 +147,5 @@ func RemoveGuild(ctx Context) {
 
 // Test is a bot owner test command
 func Test(ctx Context) {
-	// log.Println(FetchMessageContentUsers(ctx))
-	for i := 0; i < 1000; i++ {
-		log.Print(RandomInt(0, 16777215))
-	}
+	log.Println("test")
 }

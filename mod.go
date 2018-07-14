@@ -90,11 +90,21 @@ func Warn(ctx Context) {
 
 	mem := FetchMessageContentUsers(ctx)
 	if len(mem) == 0 {
-		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
+		msg, _ := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
+
+		// Delete author message
+		DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
+
+		// Delete bot message
+		DeleteMessageWithTime(ctx, msg.ID, 2500)
 	}
 
 	for _, usr := range mem {
 		LogWarning(ctx, usr, reason)
+		n1 := usr.Username + "#" + usr.Discriminator
+		n2 := ctx.Event.Message.Author.Username + "#" + ctx.Event.Message.Author.Discriminator
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been warned by `%s`", n1, n2))
+
 	}
 }
 
