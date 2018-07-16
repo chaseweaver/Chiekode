@@ -136,8 +136,6 @@ func GuildExists(guild *discordgo.Guild) bool {
 		log.Println(err)
 	}
 
-	// FIX THIS FLUSH
-
 	if n == 1 {
 		return true
 	}
@@ -160,6 +158,7 @@ func RegisterNewGuild(guild *discordgo.Guild) (interface{}, error) {
 
 	if err != nil {
 		log.Println(err)
+		return nil, err
 	}
 
 	n, err := p.Do("SETNX", guild.ID, serialized)
@@ -205,7 +204,8 @@ func InitializeUsers(guild *discordgo.Guild) []User {
 func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
 	if err != nil {
-		panic(err.Error())
+		log.Println(err)
+		return
 	}
 
 	var g Guild
@@ -215,9 +215,9 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	for _, usr := range g.Users {
-		if usr.ID == mem.ID {
-			usr.Warnings = append(usr.Warnings, Warnings{
+	for k := range g.Users {
+		if g.Users[k].ID == mem.ID {
+			g.Users[k].Warnings = append(g.Users[k].Warnings, Warnings{
 				Author:   fmt.Sprintf("%s / %s", ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID),
 				Member:   fmt.Sprintf("%s / %s", mem.Username+"#"+mem.Discriminator, mem.ID),
 				MemberID: mem.ID,
@@ -232,6 +232,7 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
 	_, err = p.Do("SET", ctx.Guild.ID, serialized)
@@ -244,7 +245,8 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 func LogKick(ctx Context, mem *discordgo.User, reason string) {
 	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
 	if err != nil {
-		panic(err.Error())
+		log.Println(err)
+		return
 	}
 
 	var g Guild
@@ -254,9 +256,9 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	for _, usr := range g.Users {
-		if usr.ID == mem.ID {
-			usr.Kicks = append(usr.Kicks, Kicks{
+	for k := range g.Users {
+		if g.Users[k].ID == mem.ID {
+			g.Users[k].Kicks = append(g.Users[k].Kicks, Kicks{
 				Author:   fmt.Sprintf("%s / %s", ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID),
 				Member:   fmt.Sprintf("%s / %s", mem.Username+"#"+mem.Discriminator, mem.ID),
 				MemberID: mem.ID,
@@ -271,6 +273,7 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
 	_, err = p.Do("SET", ctx.Guild.ID, serialized)
@@ -283,7 +286,8 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 func LogBan(ctx Context, mem *discordgo.User, reason string) {
 	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
 	if err != nil {
-		panic(err.Error())
+		log.Println(err)
+		return
 	}
 
 	var g Guild
@@ -293,9 +297,9 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	for _, usr := range g.Users {
-		if usr.ID == mem.ID {
-			usr.Bans = append(usr.Bans, Bans{
+	for k := range g.Users {
+		if g.Users[k].ID == mem.ID {
+			g.Users[k].Bans = append(g.Users[k].Bans, Bans{
 				Author:   fmt.Sprintf("%s / %s", ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID),
 				Member:   fmt.Sprintf("%s / %s", mem.Username+"#"+mem.Discriminator, mem.ID),
 				MemberID: mem.ID,
@@ -310,6 +314,7 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
 	_, err = p.Do("SET", ctx.Guild.ID, serialized)

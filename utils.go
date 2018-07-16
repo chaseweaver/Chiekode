@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -96,16 +97,16 @@ func CreationTime(ID string) (t time.Time, err error) {
 
 // ParseMessageContentIDs returns an array of Discord IDs found within a string
 func ParseMessageContentIDs(content string) []string {
-	re := regexp.MustCompile("[0-9]{18,18}")
+	re := regexp.MustCompile("([0-9]{18,18})")
 	return re.FindAllString(content, -1)
 }
 
 // FetchMessageContentUsers returns an array of Discord Users found within a string by ID and Mention with guild restriction
 func FetchMessageContentUsers(ctx Context) []*discordgo.User {
 	var arr []*discordgo.User
-	re := regexp.MustCompile("[0-9]{18,18}")
-	for _, value := range re.FindAllString(ctx.Event.Message.Content, -1) {
-		mem, err := ctx.Session.User(value)
+	re := regexp.MustCompile("([0-9]{18,18})")
+	for _, v := range re.FindAllString(ctx.Event.Message.Content, -1) {
+		mem, err := ctx.Session.User(v)
 
 		if err != nil {
 			log.Println(err)
@@ -126,13 +127,24 @@ func FetchMessageContentUsers(ctx Context) []*discordgo.User {
 func FetchMessageContentUsersAllGuilds(ctx Context) []*discordgo.User {
 	var arr []*discordgo.User
 	re := regexp.MustCompile("[0-9]{18,18}")
-	for _, value := range re.FindAllString(ctx.Event.Message.Content, -1) {
-		mem, err := ctx.Session.User(value)
+	for _, v := range re.FindAllString(ctx.Event.Message.Content, -1) {
+		mem, err := ctx.Session.User(v)
 
 		if err != nil {
 			log.Println(err)
 		}
+
 		arr = append(arr, mem)
 	}
 	return arr
+}
+
+// RemoveMessageIDs removes Mentions and IDs (members, channels, roles, etc) from a string
+func RemoveMessageIDs(str string) string {
+	tmp := str
+	re := regexp.MustCompile("((<!@)[0-9]{18,18}[>])|((<@)[0-9]{18,18}[>])|([0-9]{18,18})|(<@>)|(<!@>)")
+	for _, v := range re.FindAllString(str, -1) {
+		tmp = strings.Replace(tmp, v, "", -1)
+	}
+	return tmp
 }

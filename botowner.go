@@ -147,5 +147,5 @@ func RemoveGuild(ctx Context) {
 
 // Test is a bot owner test command
 func Test(ctx Context) {
-	log.Println("test")
+	return
 }
