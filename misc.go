@@ -41,7 +41,7 @@ func init() {
 		Aliases:         []string{"pfp", "icon"},
 		UserPermissions: []string{},
 		ArgsDelim:       " ",
-		ArgsUsage:       "[@member]",
+		ArgsUsage:       "[@member|ID]",
 		Description:     "Fetches the avatar/pfp for the requested member.",
 	})
 }

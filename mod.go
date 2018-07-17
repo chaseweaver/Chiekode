@@ -65,6 +65,36 @@ func init() {
 	})
 
 	RegisterNewCommand(Command{
+		Name:            "lock",
+		Func:            Lock,
+		Enabled:         true,
+		NSFWOnly:        false,
+		IgnoreSelf:      true,
+		IgnoreBots:      true,
+		RunIn:           []string{"Text"},
+		Aliases:         []string{"lockdown"},
+		UserPermissions: []string{"Bot Owner", "Administrator", "Manage Roles", "Manage Channels"},
+		ArgsDelim:       "",
+		ArgsUsage:       "",
+		Description:     "Locks a channel (prevent message sending) for the default @everyone permission.",
+	})
+
+	RegisterNewCommand(Command{
+		Name:            "unlock",
+		Func:            Unlock,
+		Enabled:         true,
+		NSFWOnly:        false,
+		IgnoreSelf:      true,
+		IgnoreBots:      true,
+		RunIn:           []string{"Text"},
+		Aliases:         []string{},
+		UserPermissions: []string{"Bot Owner", "Administrator", "Manage Roles", "Manage Channels"},
+		ArgsDelim:       "",
+		ArgsUsage:       "",
+		Description:     "Unlocks a channel (allows message sending) for the default @everyone permission.",
+	})
+
+	RegisterNewCommand(Command{
 		Name:            "check",
 		Func:            Check,
 		Enabled:         true,
@@ -75,7 +105,7 @@ func init() {
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Administrator", "Kick Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<@member(s)|ID(s)>",
+		ArgsUsage:       "<@member(s)|ID(s)> [warnings|mutes|kicks|bans]",
 		Description:     "Checks the warnings, mutes, kicks, and bans of a mentioned user.",
 	})
 }
@@ -269,11 +299,61 @@ func Ban(ctx Context) {
 	}
 }
 
+// Lock will lock a channel (prevent message sending) for the default @everyone permission
+func Lock(ctx Context) {
+
+	// This is the default @everyone role that cannot change index, hence the hardcode
+	everyone := ctx.Guild.Roles[0]
+
+	err := ctx.Session.ChannelPermissionSet(ctx.Channel.ID, everyone.ID, "1", 0, discordgo.PermissionSendMessages)
+	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	_, err = ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("This channel is now under lockdown!"))
+
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+// Unlock will unlock a channel (allows message sending) for the default @everyone permission
+func Unlock(ctx Context) {
+
+	// This is the default @everyone role that cannot change index, hence the hardcode
+	everyone := ctx.Guild.Roles[0]
+
+	err := ctx.Session.ChannelPermissionSet(ctx.Channel.ID, everyone.ID, "1", discordgo.PermissionSendMessages, 0)
+	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	_, err = ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("This channel is no longer under lockdown!"))
+
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 // Check command will check the user's warnings, mutes, kicks, bans, nicknames, and usernames, and return it from the redis database
 func Check(ctx Context) {
 
-	if len(ctx.Args) == 0 {
-		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "Invalid usage! Please `@mention` (a) member(s)!")
+	mem := FetchMessageContentUsers(ctx)
+	gtype := strings.ToUpper(RemoveMessageIDs(ctx.Event.Message.Content))
+
+	if len(mem) == 0 {
+		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		// Delete bot message
+		DeleteMessageWithTime(ctx, msg.ID, 7500)
 	}
 
 	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
@@ -288,47 +368,152 @@ func Check(ctx Context) {
 		log.Println(err)
 	}
 
-	mem := FetchMessageContentUsers(ctx)
+	switch gtype {
+	case "WARN":
+		fallthrough
+	case "WARNS":
+		fallthrough
+	case "WARNING":
+		fallthrough
+	case "WARNINGS":
 
-	for _, member := range mem {
-		for _, usr := range g.Users {
-			if usr.ID == member.ID {
+		for _, member := range mem {
+			for _, usr := range g.Users {
+				if usr.ID == member.ID {
 
-				embed := &discordgo.MessageEmbed{
-					Title:       fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
-					Color:       RandomInt(0, 16777215),
-					Description: fmt.Sprintf("Run `%scheck @member [warnings/mutes/kicks/bans]` for a complete list of information.", g.GuildPrefix),
-					Thumbnail: &discordgo.MessageEmbedThumbnail{
-						URL:    member.AvatarURL("2048"),
-						Width:  2048,
-						Height: 2048,
-					},
-					Fields: []*discordgo.MessageEmbedField{
-						&discordgo.MessageEmbedField{
-							Name:   fmt.Sprintf("⮞ Total Warnings"),
-							Value:  fmt.Sprintf("%d", len(usr.Warnings)),
-							Inline: false,
+					embed := &discordgo.MessageEmbed{
+						Title: "Warning Stats",
+						Color: warningColor,
+						Author: &discordgo.MessageEmbedAuthor{
+							URL:     member.AvatarURL("2048"),
+							IconURL: member.AvatarURL("256"),
+							Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
 						},
-						&discordgo.MessageEmbedField{
-							Name:   fmt.Sprintf("⮞ Total Mutes"),
-							Value:  fmt.Sprintf("%d", len(usr.Mutes)),
-							Inline: false,
+						Thumbnail: &discordgo.MessageEmbedThumbnail{
+							URL:    member.AvatarURL("2048"),
+							Width:  2048,
+							Height: 2048,
 						},
-						&discordgo.MessageEmbedField{
-							Name:   fmt.Sprintf("⮞ Total Kicks"),
-							Value:  fmt.Sprintf("%d", len(usr.Kicks)),
-							Inline: false,
-						},
-						&discordgo.MessageEmbedField{
-							Name:   fmt.Sprintf("⮞ Total Bans"),
-							Value:  fmt.Sprintf("%d", len(usr.Bans)),
-							Inline: false,
-						},
-					},
-					Timestamp: time.Now().Format(time.RFC3339),
+						Description: FormatWarning(usr.Warnings),
+						Timestamp:   time.Now().Format(time.RFC3339),
+					}
+					_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+
+					if err != nil {
+						return
+					}
+
 				}
+			}
+		}
 
-				ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+	case "KICK":
+		fallthrough
+	case "KICKS":
+		for _, member := range mem {
+			for _, usr := range g.Users {
+				if usr.ID == member.ID {
+
+					embed := &discordgo.MessageEmbed{
+						Title: "Warning Stats",
+						Color: kickColor,
+						Author: &discordgo.MessageEmbedAuthor{
+							URL:     member.AvatarURL("2048"),
+							IconURL: member.AvatarURL("256"),
+							Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
+						},
+						Thumbnail: &discordgo.MessageEmbedThumbnail{
+							URL:    member.AvatarURL("2048"),
+							Width:  2048,
+							Height: 2048,
+						},
+						Description: FormatKick(usr.Kicks),
+						Timestamp:   time.Now().Format(time.RFC3339),
+					}
+					_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+
+					if err != nil {
+						return
+					}
+
+				}
+			}
+		}
+
+	case "BAN":
+		fallthrough
+	case "BANS":
+		for _, member := range mem {
+			for _, usr := range g.Users {
+				if usr.ID == member.ID {
+
+					embed := &discordgo.MessageEmbed{
+						Title: "Warning Stats",
+						Color: banColor,
+						Author: &discordgo.MessageEmbedAuthor{
+							URL:     member.AvatarURL("2048"),
+							IconURL: member.AvatarURL("256"),
+							Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
+						},
+						Thumbnail: &discordgo.MessageEmbedThumbnail{
+							URL:    member.AvatarURL("2048"),
+							Width:  2048,
+							Height: 2048,
+						},
+						Description: FormatBan(usr.Bans),
+						Timestamp:   time.Now().Format(time.RFC3339),
+					}
+					_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+
+					if err != nil {
+						return
+					}
+
+				}
+			}
+		}
+
+	default:
+		for _, member := range mem {
+			for _, usr := range g.Users {
+				if usr.ID == member.ID {
+
+					embed := &discordgo.MessageEmbed{
+						Title:       fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
+						Color:       RandomInt(0, 16777215),
+						Description: fmt.Sprintf("Run `%scheck @member [warnings/mutes/kicks/bans]` for a complete list of information.", g.GuildPrefix),
+						Thumbnail: &discordgo.MessageEmbedThumbnail{
+							URL:    member.AvatarURL("2048"),
+							Width:  2048,
+							Height: 2048,
+						},
+						Fields: []*discordgo.MessageEmbedField{
+							&discordgo.MessageEmbedField{
+								Name:   fmt.Sprintf("⮞ Total Warnings"),
+								Value:  fmt.Sprintf("%d", len(usr.Warnings)),
+								Inline: false,
+							},
+							&discordgo.MessageEmbedField{
+								Name:   fmt.Sprintf("⮞ Total Mutes"),
+								Value:  fmt.Sprintf("%d", len(usr.Mutes)),
+								Inline: false,
+							},
+							&discordgo.MessageEmbedField{
+								Name:   fmt.Sprintf("⮞ Total Kicks"),
+								Value:  fmt.Sprintf("%d", len(usr.Kicks)),
+								Inline: false,
+							},
+							&discordgo.MessageEmbedField{
+								Name:   fmt.Sprintf("⮞ Total Bans"),
+								Value:  fmt.Sprintf("%d", len(usr.Bans)),
+								Inline: false,
+							},
+						},
+						Timestamp: time.Now().Format(time.RFC3339),
+					}
+
+					ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+				}
 			}
 		}
 	}

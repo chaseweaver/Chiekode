@@ -50,43 +50,39 @@ type User struct {
 
 // Warnings information for a user
 type Warnings struct {
-	Author   string
-	Member   string
-	MemberID string
-	Channel  string
-	Reason   string
-	Time     time.Time
+	Author  *discordgo.User
+	Member  *discordgo.User
+	Channel *discordgo.Channel
+	Reason  string
+	Time    time.Time
 }
 
 // Kicks information for a user
 type Kicks struct {
-	Author   string
-	Member   string
-	MemberID string
-	Channel  string
-	Reason   string
-	Time     time.Time
+	Author  *discordgo.User
+	Member  *discordgo.User
+	Channel *discordgo.Channel
+	Reason  string
+	Time    time.Time
 }
 
 // Bans information for a user
 type Bans struct {
-	Author   string
-	Member   string
-	MemberID string
-	Channel  string
-	Reason   string
-	Time     time.Time
+	Author  *discordgo.User
+	Member  *discordgo.User
+	Channel *discordgo.Channel
+	Reason  string
+	Time    time.Time
 }
 
 // Mutes information for a user
 type Mutes struct {
-	Author   string
-	Member   string
-	MemberID string
-	Channel  string
-	Reason   string
-	Time     time.Time
-	Length   time.Duration
+	Author  *discordgo.User
+	Member  *discordgo.User
+	Channel *discordgo.Channel
+	Reason  string
+	Time    time.Time
+	Length  time.Duration
 }
 
 // DialNewPool connectes to a local Redis database by port pass-in
@@ -215,15 +211,14 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	for k := range g.Users {
-		if g.Users[k].ID == mem.ID {
-			g.Users[k].Warnings = append(g.Users[k].Warnings, Warnings{
-				Author:   fmt.Sprintf("%s / %s", ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID),
-				Member:   fmt.Sprintf("%s / %s", mem.Username+"#"+mem.Discriminator, mem.ID),
-				MemberID: mem.ID,
-				Channel:  fmt.Sprintf("%s / %s", ctx.Channel.Name, ctx.Channel.ID),
-				Reason:   reason,
-				Time:     time.Now(),
+	for u := range g.Users {
+		if g.Users[u].ID == mem.ID {
+			g.Users[u].Warnings = append(g.Users[u].Warnings, Warnings{
+				Author:  ctx.Event.Author,
+				Member:  mem,
+				Channel: ctx.Channel,
+				Reason:  reason,
+				Time:    time.Now(),
 			})
 		}
 	}
@@ -256,15 +251,14 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	for k := range g.Users {
-		if g.Users[k].ID == mem.ID {
-			g.Users[k].Kicks = append(g.Users[k].Kicks, Kicks{
-				Author:   fmt.Sprintf("%s / %s", ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID),
-				Member:   fmt.Sprintf("%s / %s", mem.Username+"#"+mem.Discriminator, mem.ID),
-				MemberID: mem.ID,
-				Channel:  fmt.Sprintf("%s / %s", ctx.Channel.Name, ctx.Channel.ID),
-				Reason:   reason,
-				Time:     time.Now(),
+	for u := range g.Users {
+		if g.Users[u].ID == mem.ID {
+			g.Users[u].Kicks = append(g.Users[u].Kicks, Kicks{
+				Author:  ctx.Event.Author,
+				Member:  mem,
+				Channel: ctx.Channel,
+				Reason:  reason,
+				Time:    time.Now(),
 			})
 		}
 	}
@@ -297,15 +291,14 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	for k := range g.Users {
-		if g.Users[k].ID == mem.ID {
-			g.Users[k].Bans = append(g.Users[k].Bans, Bans{
-				Author:   fmt.Sprintf("%s / %s", ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator, ctx.Event.Author.ID),
-				Member:   fmt.Sprintf("%s / %s", mem.Username+"#"+mem.Discriminator, mem.ID),
-				MemberID: mem.ID,
-				Channel:  fmt.Sprintf("%s / %s", ctx.Channel.Name, ctx.Channel.ID),
-				Reason:   reason,
-				Time:     time.Now(),
+	for u := range g.Users {
+		if g.Users[u].ID == mem.ID {
+			g.Users[u].Bans = append(g.Users[u].Bans, Bans{
+				Author:  ctx.Event.Author,
+				Member:  mem,
+				Channel: ctx.Channel,
+				Reason:  reason,
+				Time:    time.Now(),
 			})
 		}
 	}
@@ -321,4 +314,61 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+// FormatWarning returns a string of warnings
+func FormatWarning(warnings []Warnings) string {
+
+	var str string
+	for _, v := range warnings {
+		avatar := fmt.Sprintf("%s#%s / %s", v.Author.Username, v.Author.Discriminator, v.Author.ID)
+		channel := fmt.Sprintf("%s / %s", v.Channel.Name, v.Channel.ID)
+
+		str = str + fmt.Sprintf(
+			"`Author:   %s`\n"+
+				"`Channel:  %s`\n"+
+				"`Reason:   %s`\n"+
+				"`Time:     %s`\n\n",
+			avatar, channel, v.Reason, v.Time.Format("01/02/06 03:04:05 PM MST"))
+	}
+
+	return str
+}
+
+// FormatKick returns a string of kicks
+func FormatKick(kicks []Kicks) string {
+
+	var str string
+	for _, v := range kicks {
+		avatar := fmt.Sprintf("%s#%s / %s", v.Author.Username, v.Author.Discriminator, v.Author.ID)
+		channel := fmt.Sprintf("%s / %s", v.Channel.Name, v.Channel.ID)
+
+		str = str + fmt.Sprintf(
+			"`Author:   %s`\n"+
+				"`Channel:  %s`\n"+
+				"`Reason:   %s`\n"+
+				"`Time:     %s`\n\n",
+			avatar, channel, v.Reason, v.Time.Format("01/02/06 03:04:05 PM MST"))
+	}
+
+	return str
+}
+
+// FormatBan returns a string of bans
+func FormatBan(bans []Bans) string {
+
+	var str string
+	for _, v := range bans {
+		avatar := fmt.Sprintf("%s#%s / %s", v.Author.Username, v.Author.Discriminator, v.Author.ID)
+		channel := fmt.Sprintf("%s / %s", v.Channel.Name, v.Channel.ID)
+
+		str = str + fmt.Sprintf(
+			"`Author:   %s`\n"+
+				"`Channel:  %s`\n"+
+				"`Reason:   %s`\n"+
+				"`Time:     %s`\n\n",
+			avatar, channel, v.Reason, v.Time.Format("01/02/06 03:04:05 PM MST"))
+	}
+
+	return str
 }

@@ -13,6 +13,13 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+var (
+	warningColor = 16776960
+	muteColor    = 40447
+	kickColor    = 54527
+	banColor     = 16711684
+)
+
 /**
  * utils.go
  * Chase Weaver
@@ -126,7 +133,7 @@ func FetchMessageContentUsers(ctx Context) []*discordgo.User {
 // FetchMessageContentUsersAllGuilds returns an array of Discord Users found within a string by ID and Mention without guild restriction
 func FetchMessageContentUsersAllGuilds(ctx Context) []*discordgo.User {
 	var arr []*discordgo.User
-	re := regexp.MustCompile("[0-9]{18,18}")
+	re := regexp.MustCompile("([0-9]{18,18})")
 	for _, v := range re.FindAllString(ctx.Event.Message.Content, -1) {
 		mem, err := ctx.Session.User(v)
 
@@ -146,5 +153,5 @@ func RemoveMessageIDs(str string) string {
 	for _, v := range re.FindAllString(str, -1) {
 		tmp = strings.Replace(tmp, v, "", -1)
 	}
-	return tmp
+	return strings.TrimSpace(tmp)
 }
