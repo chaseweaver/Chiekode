@@ -100,7 +100,7 @@ This is to be passed in for each func call:
 | Aliases         | Other names the command will execute under                           | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | UserPermissions | Permissions the user needs in order for the command to execute       | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | ArgsDelim       | Seperator that will parse individual arguments                       | [string](https://golang.org/pkg/builtin/#string)       |
-| ArgsUsag        | Example of how to run the command, used for `help`                   | [string](https://golang.org/pkg/builtin/#string)       |
+| ArgsUsage       | Example of how to run the command, used for `help`                   | [string](https://golang.org/pkg/builtin/#string)       |
 | Description     | Description of the command, used for `help`                          | [string](https://golang.org/pkg/builtin/#string)       |
 
 
