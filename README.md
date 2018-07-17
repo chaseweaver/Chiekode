@@ -58,7 +58,7 @@ Example and templates are shown below.
             Aliases:         []string{"nameone", "nametwo"},
             UserPermissions: []string{"Kick Members"},
             ArgsDelim:       " ",
-            Usage:           "Example of how to run command here",
+            ArgsUsage:       "Example of how to run command here",
             Description:     "Description Here",
         })
 
