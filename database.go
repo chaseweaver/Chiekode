@@ -234,6 +234,11 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 	if err != nil {
 		log.Println(err)
 	}
+
+	_, err = p.Do("WAIT", 2000)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // LogKick logs a kick to a user's record in the database
@@ -271,6 +276,11 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 	}
 
 	_, err = p.Do("SET", ctx.Guild.ID, serialized)
+	if err != nil {
+		log.Println(err)
+	}
+
+	_, err = p.Do("WAIT", 2000)
 	if err != nil {
 		log.Println(err)
 	}
@@ -314,22 +324,27 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 	if err != nil {
 		log.Println(err)
 	}
+
+	_, err = p.Do("WAIT", 2000)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // FormatWarning returns a string of warnings
 func FormatWarning(warnings []Warnings) string {
 
-	var str string
+	str := "\n"
 	for _, v := range warnings {
 		avatar := fmt.Sprintf("%s#%s / %s", v.Author.Username, v.Author.Discriminator, v.Author.ID)
-		channel := fmt.Sprintf("%s / %s", v.Channel.Name, v.Channel.ID)
+		channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
 
 		str = str + fmt.Sprintf(
-			"`Author:   %s`\n"+
-				"`Channel:  %s`\n"+
-				"`Reason:   %s`\n"+
-				"`Time:     %s`\n\n",
-			avatar, channel, v.Reason, v.Time.Format("01/02/06 03:04:05 PM MST"))
+			"**Author**:\t%s\n"+
+				"**Channel**:  %s\n"+
+				"**Time**:\t\t%s\n"+
+				"**Reason**:\t%s\n\n",
+			avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
 	}
 
 	return str
@@ -338,17 +353,17 @@ func FormatWarning(warnings []Warnings) string {
 // FormatKick returns a string of kicks
 func FormatKick(kicks []Kicks) string {
 
-	var str string
+	str := "\n"
 	for _, v := range kicks {
 		avatar := fmt.Sprintf("%s#%s / %s", v.Author.Username, v.Author.Discriminator, v.Author.ID)
-		channel := fmt.Sprintf("%s / %s", v.Channel.Name, v.Channel.ID)
+		channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
 
 		str = str + fmt.Sprintf(
-			"`Author:   %s`\n"+
-				"`Channel:  %s`\n"+
-				"`Reason:   %s`\n"+
-				"`Time:     %s`\n\n",
-			avatar, channel, v.Reason, v.Time.Format("01/02/06 03:04:05 PM MST"))
+			"**Author**:\t%s\n"+
+				"**Channel**:  %s\n"+
+				"**Time**:\t\t%s\n"+
+				"**Reason**:\t%s\n\n",
+			avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
 	}
 
 	return str
@@ -357,17 +372,17 @@ func FormatKick(kicks []Kicks) string {
 // FormatBan returns a string of bans
 func FormatBan(bans []Bans) string {
 
-	var str string
+	str := "\n"
 	for _, v := range bans {
 		avatar := fmt.Sprintf("%s#%s / %s", v.Author.Username, v.Author.Discriminator, v.Author.ID)
-		channel := fmt.Sprintf("%s / %s", v.Channel.Name, v.Channel.ID)
+		channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
 
 		str = str + fmt.Sprintf(
-			"`Author:   %s`\n"+
-				"`Channel:  %s`\n"+
-				"`Reason:   %s`\n"+
-				"`Time:     %s`\n\n",
-			avatar, channel, v.Reason, v.Time.Format("01/02/06 03:04:05 PM MST"))
+			"**Author**:\t%s\n"+
+				"**Channel**:  %s\n"+
+				"**Time**:\t\t%s\n"+
+				"**Reason**:\t%s\n\n",
+			avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
 	}
 
 	return str

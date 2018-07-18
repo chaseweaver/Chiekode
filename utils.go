@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	warningColor = 16776960
+	warningColor = 16383942
 	muteColor    = 40447
 	kickColor    = 54527
 	banColor     = 16711684
@@ -47,6 +47,11 @@ func DeleteMessageWithTime(ctx Context, ID string, t float32) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+// Wait will delay execution base on time in milliseconds
+func Wait(t float32) {
+	time.Sleep(time.Duration(t) * time.Millisecond)
 }
 
 // Round will take an input and round it to the nearest unit number

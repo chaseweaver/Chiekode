@@ -134,6 +134,8 @@ func Warn(ctx Context) {
 		DeleteMessageWithTime(ctx, msg.ID, 7500)
 	}
 
+	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
+
 	for _, member := range mem {
 		n1 := member.Username + "#" + member.Discriminator
 		n2 := ctx.Event.Message.Author.Username + "#" + ctx.Event.Message.Author.Discriminator
@@ -141,8 +143,6 @@ func Warn(ctx Context) {
 
 		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been warned by `%s`", n1, n2))
 		LogWarning(ctx, member, reason)
-
-		DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
 
 		if err != nil {
 			log.Println(err)
@@ -164,6 +164,7 @@ func Warn(ctx Context) {
 				break
 			}
 		}
+
 	}
 }
 
@@ -191,6 +192,8 @@ func Kick(ctx Context) {
 		DeleteMessageWithTime(ctx, msg.ID, 7500)
 	}
 
+	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
+
 	for _, member := range mem {
 		err = ctx.Session.GuildMemberDeleteWithReason(ctx.Guild.ID, member.ID, reason)
 
@@ -207,8 +210,6 @@ func Kick(ctx Context) {
 
 		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been kicked by `%s`", n1, n2))
 		LogKick(ctx, member, reason)
-
-		DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
 
 		if err != nil {
 			log.Println(err)
@@ -230,6 +231,7 @@ func Kick(ctx Context) {
 				break
 			}
 		}
+
 	}
 }
 
@@ -257,6 +259,8 @@ func Ban(ctx Context) {
 		DeleteMessageWithTime(ctx, msg.ID, 7500)
 	}
 
+	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
+
 	for _, member := range mem {
 		err = ctx.Session.GuildBanCreateWithReason(ctx.Guild.ID, member.ID, reason, 0)
 
@@ -273,8 +277,6 @@ func Ban(ctx Context) {
 
 		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been banned by `%s`", n1, n2))
 		LogBan(ctx, member, reason)
-
-		DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
 
 		if err != nil {
 			log.Println(err)
@@ -296,6 +298,7 @@ func Ban(ctx Context) {
 				break
 			}
 		}
+
 	}
 }
 
@@ -343,7 +346,7 @@ func Unlock(ctx Context) {
 func Check(ctx Context) {
 
 	mem := FetchMessageContentUsers(ctx)
-	gtype := strings.ToUpper(RemoveMessageIDs(ctx.Event.Message.Content))
+	gtype := strings.ToUpper(RemoveMessageIDs(strings.Join(ctx.Args, " ")))
 
 	if len(mem) == 0 {
 		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
@@ -382,7 +385,7 @@ func Check(ctx Context) {
 				if usr.ID == member.ID {
 
 					embed := &discordgo.MessageEmbed{
-						Title: "Warning Stats",
+						Title: fmt.Sprintf("Warning Stats [%d]", len(usr.Warnings)),
 						Color: warningColor,
 						Author: &discordgo.MessageEmbedAuthor{
 							URL:     member.AvatarURL("2048"),
@@ -415,7 +418,7 @@ func Check(ctx Context) {
 				if usr.ID == member.ID {
 
 					embed := &discordgo.MessageEmbed{
-						Title: "Warning Stats",
+						Title: fmt.Sprintf("Kick Stats [%d]", len(usr.Kicks)),
 						Color: kickColor,
 						Author: &discordgo.MessageEmbedAuthor{
 							URL:     member.AvatarURL("2048"),
@@ -448,7 +451,7 @@ func Check(ctx Context) {
 				if usr.ID == member.ID {
 
 					embed := &discordgo.MessageEmbed{
-						Title: "Warning Stats",
+						Title: fmt.Sprintf("Ban Stats [%d]", len(usr.Bans)),
 						Color: banColor,
 						Author: &discordgo.MessageEmbedAuthor{
 							URL:     member.AvatarURL("2048"),
