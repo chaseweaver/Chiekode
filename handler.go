@@ -73,10 +73,13 @@ func CommandIsValid(ctx Context) bool {
 		return false
 	}
 
-	// RunIn Text, DM
+	// RunIn Text
 	if ctx.Channel.Type == discordgo.ChannelTypeGuildText && !Contains(ctx.Command.RunIn, "Text") {
 		return false
-	} else if ctx.Channel.Type == discordgo.ChannelTypeDM && !Contains(ctx.Command.RunIn, "DM") {
+	}
+
+	// RunIn DM
+	if ctx.Channel.Type == discordgo.ChannelTypeDM && !Contains(ctx.Command.RunIn, "DM") {
 		return false
 	}
 

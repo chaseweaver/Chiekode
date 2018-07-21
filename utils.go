@@ -262,7 +262,7 @@ func FetchMessageContentUsersString(ctx Context, str string) ([]*discordgo.User,
 	}
 
 	// Remove regex from message
-	rm := regexp.MustCompile("((<@)[0-9]{18,18}[>])|((<@!)[0-9]{18,18}[>])")
+	rm := regexp.MustCompile("((<@)[0-9]{18,18}[>])|((<@!)[0-9]{18,18}[>])|(<@!>)|(<@>)")
 	for _, v := range rm.FindAllString(msg, -1) {
 		msg = strings.Replace(msg, v, "", -1)
 	}

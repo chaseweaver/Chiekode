@@ -86,10 +86,13 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	ctx.Args = strings.Split(tmp, ctx.Command.ArgsDelim)[1:]
 
 	// Checks if the config for the command passes all checks and is part of a text channel in a guild
-	if ctx.Channel.Type == discordgo.ChannelTypeGuildText {
-		if !CommandIsValid(ctx) {
-			return
-		}
+	if ctx.Channel.Type == discordgo.ChannelTypeGuildText && !CommandIsValid(ctx) {
+		return
+	}
+
+	// Checks if the command can be ran in a DM or not
+	if ctx.Channel.Type == discordgo.ChannelTypeDM && !Contains(ctx.Command.RunIn, "DM") {
+		return
 	}
 
 	// Fetch command funcs from command properties init()
