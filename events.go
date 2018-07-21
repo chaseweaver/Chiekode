@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 
@@ -17,8 +18,8 @@ import (
  */
 
 // MessageCreate :
-// Triggers on a message that is visible to the bot
-// Handles message and command responses
+// Triggers on a message that is visible to the bot.
+// Handles message and command responses.
 func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Default bot prefix
@@ -104,8 +105,12 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 // GuildCreate :
-// Initializes a new guild when the bot is first added
+// Initializes a new guild when the bot is first added.
 func GuildCreate(s *discordgo.Session, m *discordgo.GuildCreate) {
+
+	if GuildExists(m.Guild) {
+		return
+	}
 
 	// Register new guild
 	_, err := RegisterNewGuild(m.Guild)
@@ -114,12 +119,16 @@ func GuildCreate(s *discordgo.Session, m *discordgo.GuildCreate) {
 		log.Panicln(err)
 	}
 
-	log.Println("== New Guild Added ==\nGuild Name: %s\nGuild ID:   %s\n", m.Guild.Name, m.Guild.ID)
+	log.Println(fmt.Sprintf("== New Guild Added ==\nGuild Name: %s\nGuild ID:   %s\n", m.Guild.Name, m.Guild.ID))
 }
 
 // GuildDelete :
-// Initializes a new guild when the bot is removed from a guild
+// Removes a guild when the bot is removed from a guild.
 func GuildDelete(s *discordgo.Session, m *discordgo.GuildDelete) {
+
+	if !GuildExists(m.Guild) {
+		return
+	}
 
 	// Delete guild key
 	_, err := DeleteGuild(m.Guild)
@@ -128,5 +137,120 @@ func GuildDelete(s *discordgo.Session, m *discordgo.GuildDelete) {
 		log.Panicln(err)
 	}
 
-	log.Println("== Guild Removed ==\nGuild Name: %s\nGuild ID:   %s\n", m.Guild.Name, m.Guild.ID)
+	log.Println(fmt.Sprintf("== Guild Removed ==\nGuild Name: %s\nGuild ID:   %s\n", m.Guild.Name, m.Guild.ID))
+}
+
+// GuildMemberAdd :
+// Adds a new member to the guild database.
+// Logs member to specified guild channel.
+// Welcomes guild member in specified guild channel.
+func GuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
+
+	// Fetch Guild information from redis database
+	data, err := redis.Bytes(p.Do("GET", m.GuildID))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var g Guild
+	err = json.Unmarshal(data, &g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Get guild from user ID
+	guild, err := s.Guild(m.GuildID)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// Register the new user in the guild databsae
+	RegisterNewUser(Context{
+		Session: s,
+		Guild:   guild,
+	}, m.User)
+
+	// Send a formatted message to the welcome channel
+	if len(g.WelcomeChannel.ID) != 0 && len(g.WelcomeMessage) != 0 {
+
+		// Format welcome message
+		msg := FormatWelcomeGoodbyeMessage(guild, m.Member, g.WelcomeMessage)
+		_, err := s.ChannelMessageSend(g.WelcomeChannel.ID, msg)
+
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
+
+	// Send a formatted message to the welcome logger channel
+	if len(g.MemberAddChannel.ID) != 0 && len(g.MemberAddMessage) != 0 {
+
+		// Format welcome message
+		msg := FormatWelcomeGoodbyeMessage(guild, m.Member, g.MemberAddMessage)
+		_, err := s.ChannelMessageSend(g.MemberAddChannel.ID, msg)
+
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
+}
+
+// GuildMemberRemove :
+// Logs member to specified guild channel.
+// Says goodbye to guild member in specified guild channel.
+func GuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRemove) {
+
+	// Fetch Guild information from redis database
+	data, err := redis.Bytes(p.Do("GET", m.GuildID))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var g Guild
+	err = json.Unmarshal(data, &g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Get guild from user ID
+	guild, err := s.Guild(m.GuildID)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// Send a formatted message to the goodbye channel
+	if len(g.GoodbyeChannel.ID) != 0 && len(g.GoodbyeMessage) != 0 {
+
+		// Format goodbye message
+		msg := FormatWelcomeGoodbyeMessage(guild, m.Member, g.GoodbyeMessage)
+		_, err := s.ChannelMessageSend(g.GoodbyeChannel.ID, msg)
+
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
+
+	// Send a formatted message to the goodbye logger channel
+	if len(g.MemberRemoveChannel.ID) != 0 && len(g.MemberRemoveMessage) != 0 {
+
+		// Format goodbye message
+		msg := FormatWelcomeGoodbyeMessage(guild, m.Member, g.MemberRemoveMessage)
+		_, err := s.ChannelMessageSend(g.MemberRemoveChannel.ID, msg)
+
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
 }

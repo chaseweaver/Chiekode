@@ -111,7 +111,7 @@ func init() {
 }
 
 // Warn :
-// Warn a user by ID / Name#xxxx / Mention, logs it to the redis database
+// Warn a user by ID / Name#xxxx / Mention, logs it to the redis database.
 func Warn(ctx Context) {
 
 	// Fetch users from message content, returns list of members and the remaining string with the member removed
@@ -185,7 +185,7 @@ func Warn(ctx Context) {
 }
 
 // Kick :
-// Kicks a user by ID / Name#xxxx / Mention, logs it to the redis database
+// Kicks a user by ID / Name#xxxx / Mention, logs it to the redis database.
 func Kick(ctx Context) {
 
 	// Fetch users from message content, returns list of members and the remaining string with the member removed
@@ -264,7 +264,7 @@ func Kick(ctx Context) {
 }
 
 // Ban :
-// Bans a user by ID / Name#xxxx / Mention, logs it to the redis database
+// Bans a user by ID / Name#xxxx / Mention, logs it to the redis database.
 func Ban(ctx Context) {
 
 	// Fetch users from message content, returns list of members and the remaining string with the member removed
@@ -343,7 +343,7 @@ func Ban(ctx Context) {
 }
 
 // Lock :
-// Overrides default @everyone permission and prevents "SEND MESSAGES" permission
+// Overrides default @everyone permission and prevents "SEND MESSAGES" permission.
 func Lock(ctx Context) {
 
 	// Default @everyone role that cannot change index
@@ -364,7 +364,7 @@ func Lock(ctx Context) {
 }
 
 // Unlock :
-// Overrides default @everyone permission and allows "SEND MESSAGES" permission
+// Overrides default @everyone permission and allows "SEND MESSAGES" permission.
 func Unlock(ctx Context) {
 
 	// Default @everyone role that cannot change index
@@ -385,7 +385,7 @@ func Unlock(ctx Context) {
 }
 
 // Check :
-// Check the user's warnings, mutes, kicks, bans, nicknames, and usernames from the redis database
+// Check the user's warnings, mutes, kicks, bans, nicknames, and usernames from the redis database.
 func Check(ctx Context) {
 
 	// Fetch users from message content

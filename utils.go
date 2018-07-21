@@ -27,18 +27,80 @@ var (
  * This package handles various utilities for shorthands and logging.
  */
 
-// RandomInt generates a random int between [x,y]
+// RandomInt :
+// Generates a random int between [x,y].
 func RandomInt(min, max int) int {
 	rand.Seed(time.Now().UTC().UnixNano())
 	return rand.Intn(max-min) + min
 }
 
-// FormatString adds string formatting (i.e. asciidoc)
+// FormatString :
+// Adds string formatting (i.e. asciidoc).
 func FormatString(s string, t string) string {
 	return fmt.Sprintf("```%s\n"+s+"```", t)
 }
 
-// TrimSuffix removes a string from the end of another string
+// FormatWelcomeGoodbyeMessage :
+// Replaces string contents with User / Guild Names and IDs.
+func FormatWelcomeGoodbyeMessage(g *discordgo.Guild, m *discordgo.Member, s string) string {
+	msg := s
+
+	// Username#xxxx
+	if strings.Contains(msg, "$MEMBER_NAME$") {
+		msg = strings.Replace(msg, "$MEMBER_NAME$", m.User.Username+"#"+m.User.Username, -1)
+	}
+
+	// @Member
+	if strings.Contains(s, "$MEMBER_MENTION$") {
+		msg = strings.Replace(msg, "$MEMBER_MENTION$", "<@"+m.User.ID+">", -1)
+	}
+
+	// Member ID
+	if strings.Contains(s, "$MEMBER_ID$") {
+		msg = strings.Replace(msg, "$MEMBER_ID$", m.User.ID, -1)
+	}
+
+	// Member Age
+	if strings.Contains(s, "$MEMBER_AGE$") {
+
+		// Fetch creation time of user
+		t, err := CreationTime(m.User.ID)
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		msg = strings.Replace(msg, "$MEMBER_AGE$", t.Format("01/02/06 03:04:05 PM MST"), -1)
+	}
+
+	// Member Joined
+	if strings.Contains(s, "$MEMBER_JOINED$") {
+
+		// Fetch joined time of user
+		t, err := time.Parse(time.RFC3339Nano, m.JoinedAt)
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		msg = strings.Replace(msg, "$MEMBER_JOINED$", t.Format("01/02/06 03:04:05 PM MST"), -1)
+	}
+
+	// Guild Name
+	if strings.Contains(s, "$GUILD_NAME$") {
+		msg = strings.Replace(msg, "$GUILD_NAME$", g.Name, -1)
+	}
+
+	// Guild ID
+	if strings.Contains(s, "$GUILD_ID$") {
+		msg = strings.Replace(msg, "$GUILD_ID$", g.ID, -1)
+	}
+
+	return msg
+}
+
+// TrimSuffix :
+// Removes a string from the end of another string.
 func TrimSuffix(s, suffix string) string {
 	if strings.HasSuffix(s, suffix) {
 		s = s[:len(s)-len(suffix)]
@@ -46,7 +108,8 @@ func TrimSuffix(s, suffix string) string {
 	return s
 }
 
-// DeleteMessageWithTime deletes a message by ID after a given time in milliseconds
+// DeleteMessageWithTime :
+// Deletes a message by ID after a given time in milliseconds.
 func DeleteMessageWithTime(ctx Context, ID string, t float32) {
 	time.Sleep(time.Duration(t) * time.Millisecond)
 
@@ -57,17 +120,20 @@ func DeleteMessageWithTime(ctx Context, ID string, t float32) {
 	}
 }
 
-// Wait will delay execution base on time in milliseconds
+// Wait :
+// Delays execution base on time in milliseconds.
 func Wait(t float32) {
 	time.Sleep(time.Duration(t) * time.Millisecond)
 }
 
-// Round will take an input and round it to the nearest unit number
+// Round :
+// Takes an input and round it to the nearest unit number.
 func Round(x, unit float64) float64 {
 	return math.Round(x/unit) * unit
 }
 
-// LogCommands logs commands being run
+// LogCommands :
+// Logs commands being run.
 func LogCommands(ctx Context) {
 	if ctx.Channel.Type == discordgo.ChannelTypeGuildText {
 		log.Printf(
@@ -94,7 +160,8 @@ func LogCommands(ctx Context) {
 	}
 }
 
-// Contains checks if element is in array
+// Contains :
+// Checks if element is in array.
 func Contains(arr []string, str string) bool {
 	for _, a := range arr {
 		if a == str {
@@ -104,7 +171,8 @@ func Contains(arr []string, str string) bool {
 	return false
 }
 
-// CreationTime returns the time a snowflake was created
+// CreationTime :
+// Returns the time a snowflake was created.
 func CreationTime(ID string) (t time.Time, err error) {
 	i, err := strconv.ParseInt(ID, 10, 64)
 	if err != nil {
@@ -116,7 +184,7 @@ func CreationTime(ID string) (t time.Time, err error) {
 }
 
 // FetchMessageContentUsers :
-// Returns an array of Discord Users found within a string by ID / Name / Mention (guild restriction)
+// Returns an array of Discord Users found within a string by ID / Name / Mention (guild restriction).
 func FetchMessageContentUsers(ctx Context, msg string) []*discordgo.User {
 	var arr []*discordgo.User
 	re := regexp.MustCompile("([0-9]{18,18})")
@@ -153,8 +221,8 @@ func FetchMessageContentUsers(ctx Context, msg string) []*discordgo.User {
 }
 
 // FetchMessageContentUsersString :
-// Returns an array of Discord Users found within a string by ID / Name / Mention (guild restriction)
-// Returns the array of users removed from the original message string
+// Returns an array of Discord Users found within a string by ID / Name / Mention (guild restriction).
+// Returns the array of users removed from the original message string.
 func FetchMessageContentUsersString(ctx Context, str string) ([]*discordgo.User, string) {
 
 	var arr []*discordgo.User
@@ -203,7 +271,7 @@ func FetchMessageContentUsersString(ctx Context, str string) ([]*discordgo.User,
 }
 
 // FetchMessageContentUsersAllGuilds :
-// Returns an array of Discord Users found within a string by ID without guild restriction
+// Returns an array of Discord Users found within a string by ID without guild restriction.
 func FetchMessageContentUsersAllGuilds(ctx Context, msg string) []*discordgo.User {
 	var arr []*discordgo.User
 	re := regexp.MustCompile("([0-9]{18,18})")
@@ -221,7 +289,7 @@ func FetchMessageContentUsersAllGuilds(ctx Context, msg string) []*discordgo.Use
 }
 
 // FetchMessageContentChannels :
-// Returns an array of Discord Channels found within a string by ID and Mention with guild restriction
+// Returns an array of Discord Channels found within a string by ID and Mention with guild restriction.
 func FetchMessageContentChannels(ctx Context, msg string) []*discordgo.Channel {
 	var arr []*discordgo.Channel
 	re := regexp.MustCompile("([0-9]{18,18})")
@@ -251,7 +319,7 @@ func FetchMessageContentChannels(ctx Context, msg string) []*discordgo.Channel {
 }
 
 // FetchMessageContentRoles :
-// Returns an array of Discord Roles found within a string by ID, Mention, and Name with guild restriction
+// Returns an array of Discord Roles found within a string by ID, Mention, and Name with guild restriction.
 func FetchMessageContentRoles(ctx Context, msg string) []*discordgo.Role {
 	var arr []*discordgo.Role
 	re := regexp.MustCompile("([0-9]{18,18})")
@@ -281,7 +349,7 @@ func FetchMessageContentRoles(ctx Context, msg string) []*discordgo.Role {
 }
 
 // FetchUsersChannelsRoles :
-// Returns  a joint of all Users, Channels, and Roles, and returns and removes any occurances found in the message
+// Returns  a joint of all Users, Channels, and Roles, and returns and removes any occurances found in the message.
 func FetchUsersChannelsRoles(ctx Context, msg string) ([]*discordgo.User, []*discordgo.Channel, []*discordgo.Role, string) {
 	str := msg
 	users := FetchMessageContentUsers(ctx, msg)

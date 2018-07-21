@@ -16,6 +16,7 @@ import (
  */
 
 type (
+
 	// Context of pass-in per command
 	Context struct {
 		Session *discordgo.Session
@@ -48,7 +49,8 @@ type (
 
 var commands = make(map[string]Command)
 
-// CommandIsValid checks if command is valid to be ran
+// CommandIsValid :
+// Checks if command is valid to be ran.
 func CommandIsValid(ctx Context) bool {
 
 	// Enabled
@@ -88,14 +90,16 @@ func CommandIsValid(ctx Context) bool {
 	return true
 }
 
-// RegisterNewCommand creates a new command
+// RegisterNewCommand :
+// Creates a new command
 func RegisterNewCommand(c Command) {
 	if !HasCommand(c.Name) {
 		commands[c.Name] = c
 	}
 }
 
-// HasCommand checks if a command is already mapped
+// HasCommand :
+// Checks if a command is already mapped.
 func HasCommand(k string) bool {
 	_, ok := commands[k]
 	if ok == true {
@@ -105,7 +109,8 @@ func HasCommand(k string) bool {
 	return false
 }
 
-// FetchCommand returns a valid command
+// FetchCommand :
+// Returns a valid command.
 func FetchCommand(k string) Command {
 	if HasCommand(commands[k].Name) {
 		return commands[k]
@@ -122,7 +127,8 @@ func FetchCommand(k string) Command {
 	return Command{}
 }
 
-// FetchCommandName returns a valid command if it exists
+// FetchCommandName :
+// Returns a valid command if it exists.
 func FetchCommandName(k string) string {
 	if HasCommand(commands[k].Name) {
 		return commands[k].Name
@@ -139,7 +145,8 @@ func FetchCommandName(k string) string {
 	return k
 }
 
-// MemberHasPermission checks if the guild member has the required permission across all roles
+// MemberHasPermission :
+// Checks if the guild member has the required permission across all roles.
 func MemberHasPermission(ctx Context, perm string) bool {
 
 	// Check for Guild Owner
@@ -240,7 +247,8 @@ func MemberHasPermission(ctx Context, perm string) bool {
 	return false
 }
 
-// Call func based on name and passes Session, MessageCreate, ...args
+// Call :
+// Func based on name and passes Session, MessageCreate, ...args.
 func Call(m map[string]interface{}, name string, params ...interface{}) (result []reflect.Value, err error) {
 	f := reflect.ValueOf(m[name])
 	if len(params) != f.Type().NumIn() {

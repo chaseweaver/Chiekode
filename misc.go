@@ -46,7 +46,8 @@ func init() {
 	})
 }
 
-// Help command returns help per all-basis or per command-basis
+// Help :
+// Returns help per all-basis or per command-basis
 func Help(ctx Context) {
 	if len(ctx.Args) > 0 {
 
@@ -84,7 +85,7 @@ func Help(ctx Context) {
 }
 
 // Avatar :
-// Returns User's Avatar by ID / Name / Mention
+// Returns User's Avatar by ID / Name / Mention.
 func Avatar(ctx Context) {
 
 	// Returns the command author's avatar if no arguments are given, or the command is within a DM

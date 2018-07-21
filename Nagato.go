@@ -40,6 +40,12 @@ func main() {
 	// Register the GuildDelete for removing guild databases
 	dg.AddHandler(GuildDelete)
 
+	// Register the GuildMemberAdd for initializing guild members, welcoming members
+	dg.AddHandler(GuildMemberAdd)
+
+	// Register the GuildMemberRemove for saying goodbye to members
+	dg.AddHandler(GuildMemberRemove)
+
 	// Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
 	if err != nil {

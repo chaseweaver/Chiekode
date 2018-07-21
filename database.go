@@ -13,14 +13,19 @@ import (
 )
 
 type (
+
 	// Guild configuration information per guild
 	Guild struct {
 		Guild               *discordgo.Guild
 		GuildPrefix         string
 		WelcomeMessage      string
 		GoodbyeMessage      string
+		MemberAddMessage    string
+		MemberRemoveMessage string
 		WelcomeChannel      *discordgo.Channel
 		GoodbyeChannel      *discordgo.Channel
+		MemberAddChannel    *discordgo.Channel
+		MemberRemoveChannel *discordgo.Channel
 		GuildUser           []GuildUser
 		BlacklistedMembers  []*discordgo.User
 		BlacklistedChannels []*discordgo.Channel
@@ -82,7 +87,7 @@ type (
 	}
 )
 
-// DialNewPool connectes to a local Redis database by port pass-in
+// DialNewPool connectes to a local Redis database by port pass-in.
 func DialNewPool(net string, port string) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:   80,
@@ -97,7 +102,7 @@ func DialNewPool(net string, port string) *redis.Pool {
 	}
 }
 
-// DialNewPoolURL connectes to a Redis database by URL pass-in
+// DialNewPoolURL connectes to a Redis database by URL pass-in.
 func DialNewPoolURL(url string) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:   80,
@@ -112,7 +117,8 @@ func DialNewPoolURL(url string) *redis.Pool {
 	}
 }
 
-// DeleteGuild removes a guild from the database
+// DeleteGuild :
+// Removes a guild from the database.
 func DeleteGuild(guild *discordgo.Guild) (interface{}, error) {
 	n, err := p.Do("DEL", guild.ID)
 	if err != nil {
@@ -123,14 +129,14 @@ func DeleteGuild(guild *discordgo.Guild) (interface{}, error) {
 }
 
 // GuildExists :
-// Checks if guild key exists and returns true, otherwise false
+// Checks if guild key exists and returns true, otherwise false.
 func GuildExists(guild *discordgo.Guild) bool {
 	n, err := p.Do("EXISTS", guild.ID)
 	if err != nil {
 		log.Println(err)
 	}
 
-	if n == 1 {
+	if n != 1 {
 		return true
 	}
 
@@ -138,15 +144,15 @@ func GuildExists(guild *discordgo.Guild) bool {
 }
 
 // RegisterNewGuild :
-// Creates a key with a guild ID and given values
+// Creates a key with a guild ID and given values.
 func RegisterNewGuild(guild *discordgo.Guild) (interface{}, error) {
 
 	// Initialize guild prefix with configuration default
 	g := &Guild{
 		Guild:          guild,
 		GuildPrefix:    conf.Prefix,
-		WelcomeMessage: "Welcome $MEMBER to $GUILD! Enjoy your stay.",
-		GoodbyeMessage: "Goodbye, $MEMBER ($NAME)!",
+		WelcomeMessage: "Welcome $MEMBER_MENTION$ to $GUILD_NAME$! Enjoy your stay.",
+		GoodbyeMessage: "Goodbye, `$MEMBER_NAME$`!",
 	}
 
 	serialized, err := json.Marshal(g)
@@ -165,7 +171,7 @@ func RegisterNewGuild(guild *discordgo.Guild) (interface{}, error) {
 }
 
 // RegisterNewUser :
-// Creates a new guild user with user defaults
+// Creates a new guild user with user defaults.
 func RegisterNewUser(ctx Context, user *discordgo.User) GuildUser {
 
 	// Fetch guild member information
@@ -206,7 +212,7 @@ func RegisterNewUser(ctx Context, user *discordgo.User) GuildUser {
 }
 
 // LogWarning :
-// Logs a warning to a user's record in the redis database
+// Logs a warning to a user's record in the redis database.
 func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 
 	// Fetch Guild information from redis database
@@ -267,7 +273,7 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 }
 
 // LogKick :
-// Logs a kick to a user's record in the redis database
+// Logs a kick to a user's record in the redis database.
 func LogKick(ctx Context, mem *discordgo.User, reason string) {
 
 	// Fetch Guild information from redis database
@@ -328,7 +334,7 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 }
 
 // LogBan :
-// Logs a ban to a user's record in the redis database
+// Logs a ban to a user's record in the redis database.
 func LogBan(ctx Context, mem *discordgo.User, reason string) {
 
 	// Fetch Guild information from redis database
@@ -388,7 +394,8 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 	}
 }
 
-// FormatWarning returns a string of warnings
+// FormatWarning :
+// Returns a string of warnings.
 func FormatWarning(warnings []Warnings) string {
 
 	str := "\n"
@@ -407,7 +414,8 @@ func FormatWarning(warnings []Warnings) string {
 	return str
 }
 
-// FormatKick returns a string of kicks
+// FormatKick :
+// Returns a string of kicks.
 func FormatKick(kicks []Kicks) string {
 
 	str := "\n"
@@ -426,7 +434,8 @@ func FormatKick(kicks []Kicks) string {
 	return str
 }
 
-// FormatBan returns a string of bans
+// FormatBan :
+// Returns a string of bans.
 func FormatBan(bans []Bans) string {
 
 	str := "\n"
