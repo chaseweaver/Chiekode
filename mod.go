@@ -389,10 +389,10 @@ func Unlock(ctx Context) {
 func Check(ctx Context) {
 
 	// Fetch users from message content
-	members := FetchMessageContentUsers(ctx, strings.Join(ctx.Args, ctx.Command.ArgsDelim))
+	members, checkType := FetchMessageContentUsersString(ctx, strings.Join(ctx.Args, ctx.Command.ArgsDelim))
 
 	// Type of check to look for
-	checkType := strings.Join(ctx.Args, ctx.Command.ArgsDelim)
+	checkType = strings.ToUpper(checkType)
 
 	// Returns if a user cannot be found in the message, deletes delayed response
 	if len(members) == 0 {
@@ -419,14 +419,7 @@ func Check(ctx Context) {
 		log.Println(err)
 	}
 
-	switch checkType {
-	case "WARN":
-		fallthrough
-	case "WARNS":
-		fallthrough
-	case "WARNING":
-		fallthrough
-	case "WARNINGS":
+	if strings.Contains(checkType, "WARN") {
 
 		for _, member := range members {
 			for _, usr := range g.GuildUser {
@@ -457,10 +450,8 @@ func Check(ctx Context) {
 				}
 			}
 		}
+	} else if strings.Contains(checkType, "KICK") {
 
-	case "KICK":
-		fallthrough
-	case "KICKS":
 		for _, member := range members {
 			for _, usr := range g.GuildUser {
 				if usr.User.ID == member.ID {
@@ -490,10 +481,8 @@ func Check(ctx Context) {
 				}
 			}
 		}
+	} else if strings.Contains(checkType, "BAN") {
 
-	case "BAN":
-		fallthrough
-	case "BANS":
 		for _, member := range members {
 			for _, usr := range g.GuildUser {
 				if usr.User.ID == member.ID {
@@ -523,8 +512,8 @@ func Check(ctx Context) {
 				}
 			}
 		}
+	} else {
 
-	default:
 		for _, member := range members {
 			for _, usr := range g.GuildUser {
 				if usr.User.ID == member.ID {
