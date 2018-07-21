@@ -12,78 +12,75 @@ import (
 	"github.com/gomodule/redigo/redis"
 )
 
-// Guild configuration information per guild
-type Guild struct {
-	GuildName           string
-	GuildPrefix         string
-	GuildID             string
-	Users               []User
-	BlacklistedChannels []string
-	BlacklistedMembers  []string
-	WelcomeMessage      string
-	WelcomeChannel      string
-	GoodbyeMessage      string
-	GoodbyeChannel      string
-	Events              []string
-	DisabledCommands    []string
-	BirthdayRole        string
-	MutedRole           string
-	AutoRole            []string
-}
+type (
+	// Guild configuration information per guild
+	Guild struct {
+		Guild               *discordgo.Guild
+		GuildPrefix         string
+		WelcomeMessage      string
+		GoodbyeMessage      string
+		WelcomeChannel      *discordgo.Channel
+		GoodbyeChannel      *discordgo.Channel
+		GuildUser           []GuildUser
+		BlacklistedMembers  []*discordgo.User
+		BlacklistedChannels []*discordgo.Channel
+		AutoRole            []*discordgo.Role
+		MutedRole           *discordgo.Role
+		DisabledCommands    []Command
+	}
 
-// User information
-type User struct {
-	Username          string
-	Discriminator     string
-	Nickname          string
-	ID                string
-	Age               string
-	JoinedAt          string
-	PreviousUsernames []string
-	PreviousNicknames []string
-	Roles             []string
-	Warnings          []Warnings
-	Kicks             []Kicks
-	Bans              []Bans
-	Mutes             []Mutes
-}
+	// GuildUser information
+	GuildUser struct {
+		User              *discordgo.User
+		Member            *discordgo.Member
+		Age               string
+		JoinedAt          string
+		PreviousUsernames []string
+		PreviousNicknames []string
+		Roles             []*discordgo.Role
+		Warnings          []Warnings
+		Kicks             []Kicks
+		Bans              []Bans
+		Mutes             []Mutes
+	}
 
-// Warnings information for a user
-type Warnings struct {
-	Author  *discordgo.User
-	Member  *discordgo.User
-	Channel *discordgo.Channel
-	Reason  string
-	Time    time.Time
-}
+	// Warnings information for a user
+	Warnings struct {
+		AuthorUser *discordgo.User
+		TargetUser *discordgo.User
+		Channel    *discordgo.Channel
+		Reason     string
+		Time       time.Time
+	}
 
-// Kicks information for a user
-type Kicks struct {
-	Author  *discordgo.User
-	Member  *discordgo.User
-	Channel *discordgo.Channel
-	Reason  string
-	Time    time.Time
-}
+	// Kicks information for a user
+	Kicks struct {
+		AuthorUser *discordgo.User
+		TargetUser *discordgo.User
+		Channel    *discordgo.Channel
+		Reason     string
+		Time       time.Time
+	}
 
-// Bans information for a user
-type Bans struct {
-	Author  *discordgo.User
-	Member  *discordgo.User
-	Channel *discordgo.Channel
-	Reason  string
-	Time    time.Time
-}
+	// Bans information for a user
+	Bans struct {
+		AuthorUser *discordgo.User
+		TargetUser *discordgo.User
+		Channel    *discordgo.Channel
+		Reason     string
+		Time       time.Time
+	}
 
-// Mutes information for a user
-type Mutes struct {
-	Author  *discordgo.User
-	Member  *discordgo.User
-	Channel *discordgo.Channel
-	Reason  string
-	Time    time.Time
-	Length  time.Duration
-}
+	// Mutes information for a user
+	Mutes struct {
+		AuthorUser *discordgo.User
+		TargetUser *discordgo.User
+		Channel    *discordgo.Channel
+		Reason     string
+		Time       time.Time
+		Length     time.Duration
+	}
+)
 
 // DialNewPool connectes to a local Redis database by port pass-in
 func DialNewPool(net string, port string) *redis.Pool {
@@ -125,7 +122,8 @@ func DeleteGuild(guild *discordgo.Guild) (interface{}, error) {
 	return n, nil
 }
 
-// GuildExists returns true if guild key exists, false if not
+// GuildExists :
+// Checks if guild key exists and returns true, otherwise false
 func GuildExists(guild *discordgo.Guild) bool {
 	n, err := p.Do("EXISTS", guild.ID)
 	if err != nil {
@@ -139,15 +137,16 @@ func GuildExists(guild *discordgo.Guild) bool {
 	return false
 }
 
-// RegisterNewGuild creates a key with a guild ID
+// RegisterNewGuild :
+// Creates a key with a guild ID and given values
 func RegisterNewGuild(guild *discordgo.Guild) (interface{}, error) {
-	users := InitializeUsers(guild)
 
+	// Initialize guild prefix with configuration default
 	g := &Guild{
-		GuildName:   guild.Name,
-		GuildPrefix: "+",
-		GuildID:     guild.ID,
-		Users:       users,
+		Guild:          guild,
+		GuildPrefix:    conf.Prefix,
+		WelcomeMessage: "Welcome $MEMBER to $GUILD! Enjoy your stay.",
+		GoodbyeMessage: "Goodbye, $MEMBER ($NAME)!",
 	}
 
 	serialized, err := json.Marshal(g)
@@ -165,39 +164,52 @@ func RegisterNewGuild(guild *discordgo.Guild) (interface{}, error) {
 	return n, nil
 }
 
-// InitializeUsers fetches user defaults upon guild initialization
-func InitializeUsers(guild *discordgo.Guild) []User {
-	user := []User{}
-	for _, usr := range guild.Members {
-		age, err := CreationTime(usr.User.ID)
-		iso, err := time.Parse(time.RFC3339Nano, usr.JoinedAt)
+// RegisterNewUser :
+// Creates a new guild user with user defaults
+func RegisterNewUser(ctx Context, user *discordgo.User) GuildUser {
 
-		if err != nil {
-			log.Println(err)
-		}
+	// Fetch guild member information
+	member, err := ctx.Session.GuildMember(ctx.Guild.ID, user.ID)
 
-		user = append(user, User{
-			Username:          usr.User.Username,
-			Discriminator:     usr.User.Discriminator,
-			Nickname:          usr.Nick,
-			ID:                usr.User.ID,
-			Age:               age.Format("01/02/06 03:04:05 PM MST"),
-			JoinedAt:          iso.Format("01/02/06 03:04:05 PM MST"),
-			PreviousUsernames: []string{},
-			PreviousNicknames: []string{},
-			Roles:             []string{},
-			Warnings:          []Warnings{},
-			Kicks:             []Kicks{},
-			Bans:              []Bans{},
-			Mutes:             []Mutes{},
-		})
+	if err != nil {
+		log.Println(err)
 	}
 
-	return user
+	// Fetch Account creation time
+	age, err := CreationTime(member.User.ID)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Fetch member joined time
+	joined, err := time.Parse(time.RFC3339Nano, member.JoinedAt)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	return GuildUser{
+		User:              user,
+		Member:            member,
+		Age:               age.Format("01/02/06 03:04:05 PM MST"),
+		JoinedAt:          joined.Format("01/02/06 03:04:05 PM MST"),
+		PreviousUsernames: []string{},
+		PreviousNicknames: []string{},
+		Roles:             []*discordgo.Role{},
+		Warnings:          []Warnings{},
+		Kicks:             []Kicks{},
+		Bans:              []Bans{},
+		Mutes:             []Mutes{},
+	}
+
 }
 
-// LogWarning logs a warning to a user's record in the database
+// LogWarning :
+// Logs a warning to a user's record in the redis database
 func LogWarning(ctx Context, mem *discordgo.User, reason string) {
+
+	// Fetch Guild information from redis database
 	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
 	if err != nil {
 		log.Println(err)
@@ -211,16 +223,34 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	for u := range g.Users {
-		if g.Users[u].ID == mem.ID {
-			g.Users[u].Warnings = append(g.Users[u].Warnings, Warnings{
-				Author:  ctx.Event.Author,
-				Member:  mem,
-				Channel: ctx.Channel,
-				Reason:  reason,
-				Time:    time.Now(),
-			})
+	found := false
+	var index int
+
+	for u := range g.GuildUser {
+		if g.GuildUser[u].User.ID == mem.ID {
+			found = true
+			index = u
 		}
+	}
+
+	if found {
+		g.GuildUser[index].Warnings = append(g.GuildUser[index].Warnings, Warnings{
+			AuthorUser: ctx.Event.Author,
+			TargetUser: mem,
+			Channel:    ctx.Channel,
+			Reason:     reason,
+			Time:       time.Now(),
+		})
+	} else {
+		newUser := RegisterNewUser(ctx, mem)
+		newUser.Warnings = append(newUser.Warnings, Warnings{
+			AuthorUser: ctx.Event.Author,
+			TargetUser: mem,
+			Channel:    ctx.Channel,
+			Reason:     reason,
+			Time:       time.Now(),
+		})
+		g.GuildUser = append(g.GuildUser, newUser)
 	}
 
 	serialized, err := json.Marshal(g)
@@ -234,15 +264,13 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 	if err != nil {
 		log.Println(err)
 	}
-
-	_, err = p.Do("WAIT", 2000)
-	if err != nil {
-		log.Println(err)
-	}
 }
 
-// LogKick logs a kick to a user's record in the database
+// LogKick :
+// Logs a kick to a user's record in the redis database
 func LogKick(ctx Context, mem *discordgo.User, reason string) {
+
+	// Fetch Guild information from redis database
 	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
 	if err != nil {
 		log.Println(err)
@@ -256,16 +284,34 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	for u := range g.Users {
-		if g.Users[u].ID == mem.ID {
-			g.Users[u].Kicks = append(g.Users[u].Kicks, Kicks{
-				Author:  ctx.Event.Author,
-				Member:  mem,
-				Channel: ctx.Channel,
-				Reason:  reason,
-				Time:    time.Now(),
-			})
+	found := false
+	var index int
+
+	for u := range g.GuildUser {
+		if g.GuildUser[u].User.ID == mem.ID {
+			found = true
+			index = u
 		}
+	}
+
+	if found {
+		g.GuildUser[index].Kicks = append(g.GuildUser[index].Kicks, Kicks{
+			AuthorUser: ctx.Event.Author,
+			TargetUser: mem,
+			Channel:    ctx.Channel,
+			Reason:     reason,
+			Time:       time.Now(),
+		})
+	} else {
+		newUser := RegisterNewUser(ctx, mem)
+		newUser.Kicks = append(newUser.Kicks, Kicks{
+			AuthorUser: ctx.Event.Author,
+			TargetUser: mem,
+			Channel:    ctx.Channel,
+			Reason:     reason,
+			Time:       time.Now(),
+		})
+		g.GuildUser = append(g.GuildUser, newUser)
 	}
 
 	serialized, err := json.Marshal(g)
@@ -276,18 +322,16 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 	}
 
 	_, err = p.Do("SET", ctx.Guild.ID, serialized)
-	if err != nil {
-		log.Println(err)
-	}
-
-	_, err = p.Do("WAIT", 2000)
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-// LogBan logs a ban to a user's record in the database
+// LogBan :
+// Logs a ban to a user's record in the redis database
 func LogBan(ctx Context, mem *discordgo.User, reason string) {
+
+	// Fetch Guild information from redis database
 	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
 	if err != nil {
 		log.Println(err)
@@ -301,16 +345,34 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	for u := range g.Users {
-		if g.Users[u].ID == mem.ID {
-			g.Users[u].Bans = append(g.Users[u].Bans, Bans{
-				Author:  ctx.Event.Author,
-				Member:  mem,
-				Channel: ctx.Channel,
-				Reason:  reason,
-				Time:    time.Now(),
-			})
+	found := false
+	var index int
+
+	for u := range g.GuildUser {
+		if g.GuildUser[u].User.ID == mem.ID {
+			found = true
+			index = u
 		}
+	}
+
+	if found {
+		g.GuildUser[index].Bans = append(g.GuildUser[index].Bans, Bans{
+			AuthorUser: ctx.Event.Author,
+			TargetUser: mem,
+			Channel:    ctx.Channel,
+			Reason:     reason,
+			Time:       time.Now(),
+		})
+	} else {
+		newUser := RegisterNewUser(ctx, mem)
+		newUser.Bans = append(newUser.Bans, Bans{
+			AuthorUser: ctx.Event.Author,
+			TargetUser: mem,
+			Channel:    ctx.Channel,
+			Reason:     reason,
+			Time:       time.Now(),
+		})
+		g.GuildUser = append(g.GuildUser, newUser)
 	}
 
 	serialized, err := json.Marshal(g)
@@ -321,11 +383,6 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 	}
 
 	_, err = p.Do("SET", ctx.Guild.ID, serialized)
-	if err != nil {
-		log.Println(err)
-	}
-
-	_, err = p.Do("WAIT", 2000)
 	if err != nil {
 		log.Println(err)
 	}
@@ -336,7 +393,7 @@ func FormatWarning(warnings []Warnings) string {
 
 	str := "\n"
 	for _, v := range warnings {
-		avatar := fmt.Sprintf("%s#%s / %s", v.Author.Username, v.Author.Discriminator, v.Author.ID)
+		avatar := fmt.Sprintf("%s#%s / %s", v.AuthorUser.Username, v.AuthorUser.Discriminator, v.AuthorUser.ID)
 		channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
 
 		str = str + fmt.Sprintf(
@@ -355,7 +412,7 @@ func FormatKick(kicks []Kicks) string {
 
 	str := "\n"
 	for _, v := range kicks {
-		avatar := fmt.Sprintf("%s#%s / %s", v.Author.Username, v.Author.Discriminator, v.Author.ID)
+		avatar := fmt.Sprintf("%s#%s / %s", v.AuthorUser.Username, v.AuthorUser.Discriminator, v.AuthorUser.ID)
 		channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
 
 		str = str + fmt.Sprintf(
@@ -374,7 +431,7 @@ func FormatBan(bans []Bans) string {
 
 	str := "\n"
 	for _, v := range bans {
-		avatar := fmt.Sprintf("%s#%s / %s", v.Author.Username, v.Author.Discriminator, v.Author.ID)
+		avatar := fmt.Sprintf("%s#%s / %s", v.AuthorUser.Username, v.AuthorUser.Discriminator, v.AuthorUser.ID)
 		channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
 
 		str = str + fmt.Sprintf(

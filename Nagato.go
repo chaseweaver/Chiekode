@@ -34,6 +34,12 @@ func main() {
 	// Register the MessageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(MessageCreate)
 
+	// Register the GuildCreate for initializing guild databases
+	dg.AddHandler(GuildCreate)
+
+	// Register the GuildDelete for removing guild databases
+	dg.AddHandler(GuildDelete)
+
 	// Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
 	if err != nil {

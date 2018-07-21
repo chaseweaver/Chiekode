@@ -16,8 +16,11 @@ import (
  * This package bundles event commands when they are triggered.
  */
 
-// MessageCreate triggers on a message that is visible to the bot
+// MessageCreate :
+// Triggers on a message that is visible to the bot
+// Handles message and command responses
 func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+
 	// Default bot prefix
 	prefix := conf.Prefix
 
@@ -65,11 +68,12 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if err != nil {
 			return
 		}
-		ctx.Guild = guild
-	}
 
-	// Registers a new guild if not done already
-	RegisterNewGuild(ctx.Guild)
+		ctx.Guild = guild
+
+		// Registers a new guild if not done already
+		RegisterNewGuild(ctx.Guild)
+	}
 
 	// Returns a valid command using a name/alias
 	ctx.Command = FetchCommand(ctx.Name)
@@ -77,15 +81,14 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Splits command arguments
 	tmp := strings.TrimPrefix(m.Content, prefix)
 
-	if len(strings.Split(tmp, ctx.Command.ArgsDelim)) > 0 {
-		ctx.Args = strings.Split(tmp, ctx.Command.ArgsDelim)[1:]
-	} else {
-		ctx.Args = nil
-	}
+	// Returns all Members, Channels, and Roles by Mention, ID, and Name, and removes them from the string
+	ctx.Args = strings.Split(tmp, ctx.Command.ArgsDelim)[1:]
 
-	// Checks if the config for the command passes all checks
-	if !CommandIsValid(ctx) {
-		return
+	// Checks if the config for the command passes all checks and is part of a text channel in a guild
+	if ctx.Channel.Type == discordgo.ChannelTypeGuildText {
+		if !CommandIsValid(ctx) {
+			return
+		}
 	}
 
 	// Fetch command funcs from command properties init()
@@ -98,4 +101,32 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Call command with args pass-in
 	Call(funcs, FetchCommandName(ctx.Name), ctx)
+}
+
+// GuildCreate :
+// Initializes a new guild when the bot is first added
+func GuildCreate(s *discordgo.Session, m *discordgo.GuildCreate) {
+
+	// Register new guild
+	_, err := RegisterNewGuild(m.Guild)
+
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	log.Println("== New Guild Added ==\nGuild Name: %s\nGuild ID:   %s\n", m.Guild.Name, m.Guild.ID)
+}
+
+// GuildDelete :
+// Initializes a new guild when the bot is removed from a guild
+func GuildDelete(s *discordgo.Session, m *discordgo.GuildDelete) {
+
+	// Delete guild key
+	_, err := DeleteGuild(m.Guild)
+
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	log.Println("== Guild Removed ==\nGuild Name: %s\nGuild ID:   %s\n", m.Guild.Name, m.Guild.ID)
 }

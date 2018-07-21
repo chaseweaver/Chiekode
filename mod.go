@@ -30,7 +30,7 @@ func init() {
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Administrator", "Kick Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<@member(s)|ID(s)>",
+		ArgsUsage:       "<@member(s)|ID(s)|Name(s)>",
 		Description:     "Warns a member via mention or ID.",
 	})
 
@@ -45,7 +45,7 @@ func init() {
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Administrator", "Kick Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<@member(s)|ID(s)>",
+		ArgsUsage:       "<@member(s)|ID(s)|Name(s)>",
 		Description:     "Kicks a member via mention or ID.",
 	})
 
@@ -60,7 +60,7 @@ func init() {
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Administrator", "Ban Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<@member(s)|ID(s)>",
+		ArgsUsage:       "<@member(s)|ID(s)|Name(s)>",
 		Description:     "Bans a member via mention or ID.",
 	})
 
@@ -105,50 +105,67 @@ func init() {
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Administrator", "Kick Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<@member(s)|ID(s)> [warnings|mutes|kicks|bans]",
+		ArgsUsage:       "<@member(s)|ID(s)|Name(s)> [warnings|mutes|kicks|bans]",
 		Description:     "Checks the warnings, mutes, kicks, and bans of a mentioned user.",
 	})
 }
 
-// Warn command will warn a mentioned user and log it to the redis database
+// Warn :
+// Warn a user by ID / Name#xxxx / Mention, logs it to the redis database
 func Warn(ctx Context) {
 
-	mem := FetchMessageContentUsers(ctx)
-	reason := RemoveMessageIDs(strings.Join(ctx.Args[0:], " "))
+	// Fetch users from message content, returns list of members and the remaining string with the member removed
+	members, reason := FetchMessageContentUsersString(ctx, strings.Join(ctx.Args, ctx.Command.ArgsDelim))
 
-	if len(reason) == 0 {
-		reason = "N/A"
-	}
+	log.Println(ctx.Args)
+	log.Println(strings.Join(ctx.Args, ctx.Command.ArgsDelim))
+	log.Println(members)
 
-	if len(mem) == 0 {
+	// Returns if a user cannot be found in the message, deletes command message, then deletes delayed response
+	if len(members) == 0 {
 		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
 
 		if err != nil {
 			log.Println(err)
 		}
 
-		// Delete author message
 		DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
-
-		// Delete bot message
 		DeleteMessageWithTime(ctx, msg.ID, 7500)
+		return
 	}
 
+	// Delete command message
 	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
 
-	for _, member := range mem {
-		n1 := member.Username + "#" + member.Discriminator
-		n2 := ctx.Event.Message.Author.Username + "#" + ctx.Event.Message.Author.Discriminator
+	// If no reason is specified, set one for the database logger
+	if len(reason) == 0 {
+		reason = "N/A"
+	}
+
+	// Warns all members found within the message, logs warning to redis database
+	for _, member := range members {
+
+		// Target username
+		target := member.Username + "#" + member.Discriminator
+
+		// Author username
+		author := ctx.Event.Message.Author.Username + "#" + ctx.Event.Message.Author.Discriminator
+
+		// Creates DM channel between bot and target
 		channel, err := ctx.Session.UserChannelCreate(member.ID)
 
-		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been warned by `%s`", n1, n2))
+		// Sends warn message to channel the command was instantiated in
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been warned by `%s`", target, author))
+
+		// Logs warning to redis database
 		LogWarning(ctx, member, reason)
 
+		// Exits the loop if the user has DMs blocked
 		if err != nil {
-			log.Println(err)
 			break
 		}
 
+		// Sends a DM to the user with the warning information if the user can accept DMs
 		if reason != "N/A" {
 			_, err = ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been warned by `%s` with reason `%s`", ctx.Event.Message.Author.Username+"#"+ctx.Event.Message.Author.Discriminator, reason))
 
@@ -164,58 +181,70 @@ func Warn(ctx Context) {
 				break
 			}
 		}
-
 	}
 }
 
-// Kick command will kick a mentioned user and log it to the redis database
+// Kick :
+// Kicks a user by ID / Name#xxxx / Mention, logs it to the redis database
 func Kick(ctx Context) {
 
-	mem := FetchMessageContentUsers(ctx)
-	reason := RemoveMessageIDs(strings.Join(ctx.Args[0:], " "))
+	// Fetch users from message content, returns list of members and the remaining string with the member removed
+	members, reason := FetchMessageContentUsersString(ctx, strings.Join(ctx.Args, ctx.Command.ArgsDelim))
 
-	if len(reason) == 0 {
-		reason = "N/A"
-	}
-
-	if len(mem) == 0 {
+	// Returns if a user cannot be found in the message, deletes command message, then deletes delayed response
+	if len(members) == 0 {
 		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
 
 		if err != nil {
 			log.Println(err)
 		}
 
-		// Delete author message
 		DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
-
-		// Delete bot message
 		DeleteMessageWithTime(ctx, msg.ID, 7500)
+		return
 	}
 
+	// Delete command message
 	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
 
-	for _, member := range mem {
+	// If no reason is specified, set one for the database logger
+	if len(reason) == 0 {
+		reason = "N/A"
+	}
+
+	// Kicks all members found within the message, logs warning to redis database
+	for _, member := range members {
+
+		// Kicks the guild member with given reason
 		err = ctx.Session.GuildMemberDeleteWithReason(ctx.Guild.ID, member.ID, reason)
 
 		if err != nil {
 			msg, _ := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot kick this user!")
-			DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
 			DeleteMessageWithTime(ctx, msg.ID, 7500)
 			break
 		}
 
-		n1 := member.Username + "#" + member.Discriminator
-		n2 := ctx.Event.Message.Author.Username + "#" + ctx.Event.Message.Author.Discriminator
+		// Target username
+		target := member.Username + "#" + member.Discriminator
+
+		// Author username
+		author := ctx.Event.Message.Author.Username + "#" + ctx.Event.Message.Author.Discriminator
+
+		// Creates DM channel between bot and target
 		channel, err := ctx.Session.UserChannelCreate(member.ID)
 
-		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been kicked by `%s`", n1, n2))
+		// Sends kick message to channel the command was instantiated in
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been kicked by `%s`", target, author))
+
+		// Logs kick to redis database
 		LogKick(ctx, member, reason)
 
+		// Exits the loop if the user has DMs blocked
 		if err != nil {
-			log.Println(err)
 			break
 		}
 
+		// Sends a DM to the user with the kick information if the user can accept DMs
 		if reason != "N/A" {
 			_, err = ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been kicked by `%s` with reason `%s`", ctx.Event.Message.Author.Username+"#"+ctx.Event.Message.Author.Discriminator, reason))
 
@@ -231,81 +260,93 @@ func Kick(ctx Context) {
 				break
 			}
 		}
-
 	}
 }
 
-// Ban command will ban a mentioned user and log it to the redis database
+// Ban :
+// Bans a user by ID / Name#xxxx / Mention, logs it to the redis database
 func Ban(ctx Context) {
 
-	mem := FetchMessageContentUsers(ctx)
-	reason := RemoveMessageIDs(strings.Join(ctx.Args[0:], " "))
+	// Fetch users from message content, returns list of members and the remaining string with the member removed
+	members, reason := FetchMessageContentUsersString(ctx, strings.Join(ctx.Args, ctx.Command.ArgsDelim))
 
-	if len(reason) == 0 {
-		reason = "N/A"
-	}
-
-	if len(mem) == 0 {
+	// Returns if a user cannot be found in the message, deletes command message, then deletes delayed response
+	if len(members) == 0 {
 		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
 
 		if err != nil {
 			log.Println(err)
 		}
 
-		// Delete author message
 		DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
-
-		// Delete bot message
 		DeleteMessageWithTime(ctx, msg.ID, 7500)
+		return
 	}
 
+	// Delete command message
 	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
 
-	for _, member := range mem {
+	// If no reason is specified, set one for the database logger
+	if len(reason) == 0 {
+		reason = "N/A"
+	}
+
+	// Bans all members found within the message, logs warning to redis database
+	for _, member := range members {
+
+		// Bans the guild member with given reason, deletes 0 messages
 		err = ctx.Session.GuildBanCreateWithReason(ctx.Guild.ID, member.ID, reason, 0)
 
 		if err != nil {
 			msg, _ := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot ban this user!")
-			DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
 			DeleteMessageWithTime(ctx, msg.ID, 7500)
 			break
 		}
 
-		n1 := member.Username + "#" + member.Discriminator
-		n2 := ctx.Event.Message.Author.Username + "#" + ctx.Event.Message.Author.Discriminator
+		// Target username
+		target := member.Username + "#" + member.Discriminator
+
+		// Author username
+		author := ctx.Event.Message.Author.Username + "#" + ctx.Event.Message.Author.Discriminator
+
+		// Creates DM channel between bot and target
 		channel, err := ctx.Session.UserChannelCreate(member.ID)
 
-		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been banned by `%s`", n1, n2))
+		// Sends ban message to channel the command was instantiated in
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been banned by `%s`", target, author))
+
+		// Logs ban to redis database
 		LogBan(ctx, member, reason)
 
+		// Exits the loop if the user has DMs blocked
 		if err != nil {
-			log.Println(err)
 			break
 		}
 
+		// Sends a DM to the user with the ban information if the user can accept DMs
 		if reason != "N/A" {
-			_, err = ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been banned by `%s` with reason `%s`", ctx.Event.Message.Author.Username+"#"+ctx.Event.Message.Author.Discriminator, reason))
+			_, err = ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been banned by `%s` with reason `%s`", author, reason))
 
 			if err != nil {
 				log.Println(err)
 				break
 			}
 		} else {
-			_, err = ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been banned by `%s` without a reason.", ctx.Event.Message.Author.Username+"#"+ctx.Event.Message.Author.Discriminator))
+			_, err = ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been banned by `%s` without a reason.", author))
 
 			if err != nil {
 				log.Println(err)
 				break
 			}
 		}
-
 	}
 }
 
-// Lock will lock a channel (prevent message sending) for the default @everyone permission
+// Lock :
+// Overrides default @everyone permission and prevents "SEND MESSAGES" permission
 func Lock(ctx Context) {
 
-	// This is the default @everyone role that cannot change index, hence the hardcode
+	// Default @everyone role that cannot change index
 	everyone := ctx.Guild.Roles[0]
 
 	err := ctx.Session.ChannelPermissionSet(ctx.Channel.ID, everyone.ID, "1", 0, discordgo.PermissionSendMessages)
@@ -322,10 +363,11 @@ func Lock(ctx Context) {
 	}
 }
 
-// Unlock will unlock a channel (allows message sending) for the default @everyone permission
+// Unlock :
+// Overrides default @everyone permission and allows "SEND MESSAGES" permission
 func Unlock(ctx Context) {
 
-	// This is the default @everyone role that cannot change index, hence the hardcode
+	// Default @everyone role that cannot change index
 	everyone := ctx.Guild.Roles[0]
 
 	err := ctx.Session.ChannelPermissionSet(ctx.Channel.ID, everyone.ID, "1", discordgo.PermissionSendMessages, 0)
@@ -342,23 +384,29 @@ func Unlock(ctx Context) {
 	}
 }
 
-// Check command will check the user's warnings, mutes, kicks, bans, nicknames, and usernames, and return it from the redis database
+// Check :
+// Check the user's warnings, mutes, kicks, bans, nicknames, and usernames from the redis database
 func Check(ctx Context) {
 
-	mem := FetchMessageContentUsers(ctx)
-	gtype := strings.ToUpper(RemoveMessageIDs(strings.Join(ctx.Args, " ")))
+	// Fetch users from message content
+	members := FetchMessageContentUsers(ctx, strings.Join(ctx.Args, ctx.Command.ArgsDelim))
 
-	if len(mem) == 0 {
+	// Type of check to look for
+	checkType := strings.Join(ctx.Args, ctx.Command.ArgsDelim)
+
+	// Returns if a user cannot be found in the message, deletes delayed response
+	if len(members) == 0 {
 		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
 
 		if err != nil {
 			log.Println(err)
 		}
 
-		// Delete bot message
 		DeleteMessageWithTime(ctx, msg.ID, 7500)
+		return
 	}
 
+	// Get guild information from database
 	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
 	if err != nil {
 		log.Println(err)
@@ -371,7 +419,7 @@ func Check(ctx Context) {
 		log.Println(err)
 	}
 
-	switch gtype {
+	switch checkType {
 	case "WARN":
 		fallthrough
 	case "WARNS":
@@ -380,9 +428,9 @@ func Check(ctx Context) {
 		fallthrough
 	case "WARNINGS":
 
-		for _, member := range mem {
-			for _, usr := range g.Users {
-				if usr.ID == member.ID {
+		for _, member := range members {
+			for _, usr := range g.GuildUser {
+				if usr.Member.User.ID == member.ID {
 
 					embed := &discordgo.MessageEmbed{
 						Title: fmt.Sprintf("Warning Stats [%d]", len(usr.Warnings)),
@@ -413,9 +461,9 @@ func Check(ctx Context) {
 	case "KICK":
 		fallthrough
 	case "KICKS":
-		for _, member := range mem {
-			for _, usr := range g.Users {
-				if usr.ID == member.ID {
+		for _, member := range members {
+			for _, usr := range g.GuildUser {
+				if usr.User.ID == member.ID {
 
 					embed := &discordgo.MessageEmbed{
 						Title: fmt.Sprintf("Kick Stats [%d]", len(usr.Kicks)),
@@ -446,9 +494,9 @@ func Check(ctx Context) {
 	case "BAN":
 		fallthrough
 	case "BANS":
-		for _, member := range mem {
-			for _, usr := range g.Users {
-				if usr.ID == member.ID {
+		for _, member := range members {
+			for _, usr := range g.GuildUser {
+				if usr.User.ID == member.ID {
 
 					embed := &discordgo.MessageEmbed{
 						Title: fmt.Sprintf("Ban Stats [%d]", len(usr.Bans)),
@@ -477,14 +525,14 @@ func Check(ctx Context) {
 		}
 
 	default:
-		for _, member := range mem {
-			for _, usr := range g.Users {
-				if usr.ID == member.ID {
+		for _, member := range members {
+			for _, usr := range g.GuildUser {
+				if usr.User.ID == member.ID {
 
 					embed := &discordgo.MessageEmbed{
 						Title:       fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
 						Color:       RandomInt(0, 16777215),
-						Description: fmt.Sprintf("Run `%scheck @member [warnings/mutes/kicks/bans]` for a complete list of information.", g.GuildPrefix),
+						Description: fmt.Sprintf("Run `%scheck <@member|ID|Name> [warnings/mutes/kicks/bans]` for a complete list of information.", g.GuildPrefix),
 						Thumbnail: &discordgo.MessageEmbedThumbnail{
 							URL:    member.AvatarURL("2048"),
 							Width:  2048,
@@ -492,22 +540,22 @@ func Check(ctx Context) {
 						},
 						Fields: []*discordgo.MessageEmbedField{
 							&discordgo.MessageEmbedField{
-								Name:   fmt.Sprintf("⮞ Total Warnings"),
+								Name:   fmt.Sprintf("❯ Total Warnings"),
 								Value:  fmt.Sprintf("%d", len(usr.Warnings)),
 								Inline: false,
 							},
 							&discordgo.MessageEmbedField{
-								Name:   fmt.Sprintf("⮞ Total Mutes"),
+								Name:   fmt.Sprintf("❯ Total Mutes"),
 								Value:  fmt.Sprintf("%d", len(usr.Mutes)),
 								Inline: false,
 							},
 							&discordgo.MessageEmbedField{
-								Name:   fmt.Sprintf("⮞ Total Kicks"),
+								Name:   fmt.Sprintf("❯ Total Kicks"),
 								Value:  fmt.Sprintf("%d", len(usr.Kicks)),
 								Inline: false,
 							},
 							&discordgo.MessageEmbedField{
-								Name:   fmt.Sprintf("⮞ Total Bans"),
+								Name:   fmt.Sprintf("❯ Total Bans"),
 								Value:  fmt.Sprintf("%d", len(usr.Bans)),
 								Inline: false,
 							},

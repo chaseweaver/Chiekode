@@ -49,7 +49,8 @@ func init() {
 // Help command returns help per all-basis or per command-basis
 func Help(ctx Context) {
 	if len(ctx.Args) > 0 {
-		c := FetchCommand(ctx.Args[0])
+
+		c := FetchCommand(ctx.Command.Name)
 		str := fmt.Sprintf("== %s ==\n", c.Name)
 		tmp := c.ArgsDelim
 		na := c.Name
@@ -82,13 +83,12 @@ func Help(ctx Context) {
 	}
 }
 
-// Avatar command will return member's avatar
+// Avatar :
+// Returns User's Avatar by ID / Name / Mention
 func Avatar(ctx Context) {
 
-	mem := FetchMessageContentUsers(ctx)
-
-	// Author avatar if no members are mentioned
-	if len(ctx.Args) == 0 {
+	// Returns the command author's avatar if no arguments are given, or the command is within a DM
+	if ctx.Channel.Type != discordgo.ChannelTypeGuildText || len(ctx.Args) == 0 {
 		ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, &discordgo.MessageEmbed{
 			Title: fmt.Sprintf("%s's Avatar", ctx.Event.Author.Username),
 			Color: RandomInt(0, 16777215),
@@ -99,23 +99,28 @@ func Avatar(ctx Context) {
 			},
 			URL: ctx.Event.Author.AvatarURL("2048"),
 		})
+		return
 	}
 
-	// Returns every mentioned member's avatar
-	for u := range mem {
+	// Fetch users from message content
+	members := FetchMessageContentUsers(ctx, strings.Join(ctx.Args, ctx.Command.ArgsDelim))
+
+	// Returns every mentioned member's avatar as seperate messages
+	for _, m := range members {
 		ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, &discordgo.MessageEmbed{
-			Title: fmt.Sprintf("%s's Avatar", mem[u].Username),
+			Title: fmt.Sprintf("%s's Avatar", m.Username),
 			Color: RandomInt(0, 16777215),
 			Image: &discordgo.MessageEmbedImage{
-				URL:    mem[u].AvatarURL("2048"),
+				URL:    m.AvatarURL("2048"),
 				Width:  2048,
 				Height: 2048,
 			},
-			URL: mem[u].AvatarURL("2048"),
+			URL: m.AvatarURL("2048"),
 		})
 	}
 
-	if len(mem) == 0 && len(ctx.Args) != 0 {
+	// Return if the message is not empty and no users can be found
+	if len(members) == 0 && len(ctx.Args) != 0 {
 		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
 	}
 }
