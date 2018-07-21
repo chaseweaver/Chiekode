@@ -145,6 +145,18 @@ func Warn(ctx Context) {
 	// Warns all members found within the message, logs warning to redis database
 	for _, member := range members {
 
+		// Prevent someone from warning the bot
+		if member.ID == ctx.Session.State.User.ID {
+			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I will not warn myself!")
+
+			if err != nil {
+				log.Println(err)
+			}
+
+			DeleteMessageWithTime(ctx, msg.ID, 7500)
+			return
+		}
+
 		// Target username
 		target := member.Username + "#" + member.Discriminator
 
@@ -214,6 +226,18 @@ func Kick(ctx Context) {
 
 	// Kicks all members found within the message, logs warning to redis database
 	for _, member := range members {
+
+		// Prevent someone from kicking the bot
+		if member.ID == ctx.Session.State.User.ID {
+			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I will not kick myself!")
+
+			if err != nil {
+				log.Println(err)
+			}
+
+			DeleteMessageWithTime(ctx, msg.ID, 7500)
+			return
+		}
 
 		// Kicks the guild member with given reason
 		err = ctx.Session.GuildMemberDeleteWithReason(ctx.Guild.ID, member.ID, reason)
@@ -293,6 +317,18 @@ func Ban(ctx Context) {
 
 	// Bans all members found within the message, logs warning to redis database
 	for _, member := range members {
+
+		// Prevent someone from banning the bot
+		if member.ID == ctx.Session.State.User.ID {
+			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I will not ban myself!")
+
+			if err != nil {
+				log.Println(err)
+			}
+
+			DeleteMessageWithTime(ctx, msg.ID, 7500)
+			return
+		}
 
 		// Bans the guild member with given reason, deletes 0 messages
 		err = ctx.Session.GuildBanCreateWithReason(ctx.Guild.ID, member.ID, reason, 0)
