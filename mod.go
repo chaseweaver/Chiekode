@@ -382,11 +382,19 @@ func Ban(ctx Context) {
 // Overrides default @everyone permission and prevents "SEND MESSAGES" permission.
 func Lock(ctx Context) {
 
-	// Default @everyone role that cannot change index
-	everyone := ctx.Guild.Roles[0]
-
-	err := ctx.Session.ChannelPermissionSet(ctx.Channel.ID, everyone.ID, "1", 0, discordgo.PermissionSendMessages)
 	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
+
+	// Get first role on the list, which is @everyone
+	everyone := ctx.Channel.PermissionOverwrites[0].ID
+
+	// Get the current Allowed permissions
+	allow := ctx.Channel.PermissionOverwrites[0].Allow
+
+	// Get the current Denied permissions, OR SEND_MESSAGES together
+	deny := ctx.Channel.PermissionOverwrites[0].Deny | discordgo.PermissionSendMessages
+
+	// Apply new permissions
+	err := ctx.Session.ChannelPermissionSet(ctx.Channel.ID, everyone, "0", allow, deny)
 
 	if err != nil {
 		log.Println(err)
@@ -402,12 +410,19 @@ func Lock(ctx Context) {
 // Unlock :
 // Overrides default @everyone permission and allows "SEND MESSAGES" permission.
 func Unlock(ctx Context) {
-
-	// Default @everyone role that cannot change index
-	everyone := ctx.Guild.Roles[0]
-
-	err := ctx.Session.ChannelPermissionSet(ctx.Channel.ID, everyone.ID, "1", discordgo.PermissionSendMessages, 0)
 	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
+
+	// Get first role on the list, which is @everyone
+	everyone := ctx.Channel.PermissionOverwrites[0].ID
+
+	// Get the current Allowed permissions, OR SEND_MESSAGES together
+	allow := ctx.Channel.PermissionOverwrites[0].Allow | discordgo.PermissionSendMessages
+
+	// Get the current Denied permissions
+	deny := ctx.Channel.PermissionOverwrites[0].Deny
+
+	// Apply new permissions
+	err := ctx.Session.ChannelPermissionSet(ctx.Channel.ID, everyone, "0", allow, deny)
 
 	if err != nil {
 		log.Println(err)

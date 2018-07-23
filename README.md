@@ -6,13 +6,14 @@ I am currently constructing the templates for this project.
 Some of the command-properties are not yet implemented.
 
 # Info
-This project was started as a more-modular based approach to handle commands.
+This project was started as a more-modular based approach to handle commands and events.
 As such, each command has a properties file as well as a func that is called.
 Example and templates are shown below.
 
 # Prerequisites
 1. Follow this [Effective Go](https://golang.org/doc/effective_go.html?)
 2. And this [Documenting Go Code](https://blog.golang.org/godoc-documenting-go-code)
+3. **Create a REDIS server.**
 
 # Install / Run
 1. Clone this repo

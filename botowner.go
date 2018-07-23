@@ -58,7 +58,7 @@ func init() {
 		UserPermissions: []string{"Bot Owner"},
 		ArgsDelim:       " ",
 		ArgsUsage:       "",
-		Description:     "Bot owner testing function",
+		Description:     "Bot owner testing function.",
 	})
 }
 

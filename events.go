@@ -103,6 +103,13 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Log commands to console
 	LogCommands(ctx)
 
+	// Type in channel
+	err = ctx.Session.ChannelTyping(ctx.Channel.ID)
+
+	if err != nil {
+		log.Println(err)
+	}
+
 	// Call command with args pass-in
 	Call(funcs, FetchCommandName(ctx.Name), ctx)
 }
