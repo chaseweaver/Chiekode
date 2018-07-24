@@ -161,7 +161,9 @@ func MemberHasPermission(ctx Context, perm string) bool {
 
 	switch perm {
 	case "Bot Owner":
-		return true
+		if ctx.Event.Author.ID == conf.OwnerID {
+			return true
+		}
 	case "Read Messages":
 		permission = discordgo.PermissionReadMessages
 	case "Send Messages":
