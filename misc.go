@@ -54,9 +54,6 @@ func init() {
 // Returns help per all-basis or per command-basis
 func Help(ctx Context) {
 
-	// Delete author command
-	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
-
 	if len(ctx.Args) == 0 {
 
 		help := "== Helpful Help Menu ==\n\n"
@@ -165,7 +162,7 @@ func Help(ctx Context) {
 		runIn := strings.Join(cmd.RunIn, ", ")
 		aliases := strings.Join(cmd.Aliases, ", ")
 		permissions := strings.Join(cmd.UserPermissions, ", ")
-		usage := g.GuildPrefix + cmd.Name + strings.Join(cmd.Usage, cmd.ArgsDelim)
+		usage := g.GuildPrefix + cmd.Name + " " + strings.Join(cmd.Usage, cmd.ArgsDelim)
 
 		if len(cmd.Aliases) == 0 {
 			aliases = "N/A"
