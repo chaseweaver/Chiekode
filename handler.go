@@ -48,6 +48,12 @@ type (
 
 var commands = make(map[string]Command)
 
+// IsEmpty ::
+// Simple way to check if a Command is empty
+func (c Command) isEmpty() bool {
+	return c.Name == ""
+}
+
 // CommandIsValid :
 // Checks if command is valid to be ran.
 func CommandIsValid(ctx Context) bool {

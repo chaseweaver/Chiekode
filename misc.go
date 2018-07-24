@@ -122,8 +122,14 @@ func Help(ctx Context) {
 		cmd := FetchCommand(strings.Join(ctx.Args, ctx.Command.ArgsDelim))
 
 		// Return if the args cannot find the requested command
-		if &cmd == nil {
-			ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` is not a valid command!", strings.Join(ctx.Args, ctx.Command.ArgsDelim)))
+		if cmd.isEmpty() {
+			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` is not a valid command!", strings.Join(ctx.Args, ctx.Command.ArgsDelim)))
+
+			if err != nil {
+				log.Println(err)
+			}
+
+			DeleteMessageWithTime(ctx, msg.ID, 3000)
 			return
 		}
 
