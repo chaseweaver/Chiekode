@@ -39,10 +39,9 @@ type (
 		Locked          bool
 		RunIn           []string
 		Aliases         []string
-		BotPermissions  []string
 		UserPermissions []string
 		ArgsDelim       string
-		ArgsUsage       string
+		Usage           []string
 		Description     string
 	}
 )
@@ -84,8 +83,8 @@ func CommandIsValid(ctx Context) bool {
 	}
 
 	// UserPermissions
-	for key := range ctx.Command.UserPermissions {
-		if len(ctx.Command.UserPermissions) != 0 && !MemberHasPermission(ctx, ctx.Command.UserPermissions[key]) {
+	for _, v := range ctx.Command.UserPermissions {
+		if len(ctx.Command.UserPermissions) != 0 && !MemberHasPermission(ctx, v) {
 			return false
 		}
 	}

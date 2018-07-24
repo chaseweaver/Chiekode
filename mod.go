@@ -28,10 +28,10 @@ func init() {
 		IgnoreBots:      true,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{},
-		UserPermissions: []string{"Bot Owner", "Administrator", "Kick Members"},
+		UserPermissions: []string{"Bot Owner", "Kick Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<@member(s)|ID(s)|Name(s)>",
-		Description:     "Warns a member via mention or ID.",
+		Usage:           []string{"<@Member(s)|ID(s)|Name(s)>"},
+		Description:     "Warns a member.",
 	})
 
 	RegisterNewCommand(Command{
@@ -43,10 +43,10 @@ func init() {
 		IgnoreBots:      true,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{},
-		UserPermissions: []string{"Bot Owner", "Administrator", "Kick Members"},
+		UserPermissions: []string{"Bot Owner", "Kick Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<@member(s)|ID(s)|Name(s)>",
-		Description:     "Kicks a member via mention or ID.",
+		Usage:           []string{"<@Member(s)|ID(s)|Name#xxxx(s)>"},
+		Description:     "Kicks a member from the guild.",
 	})
 
 	RegisterNewCommand(Command{
@@ -58,10 +58,10 @@ func init() {
 		IgnoreBots:      true,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{},
-		UserPermissions: []string{"Bot Owner", "Administrator", "Ban Members"},
+		UserPermissions: []string{"Bot Owner", "Ban Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<@member(s)|ID(s)|Name(s)>",
-		Description:     "Bans a member via mention or ID.",
+		Usage:           []string{"<Member(s)|ID(s)|Name#xxxx(s)>"},
+		Description:     "Bans a member from the guild.",
 	})
 
 	RegisterNewCommand(Command{
@@ -73,10 +73,10 @@ func init() {
 		IgnoreBots:      true,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{"lockdown"},
-		UserPermissions: []string{"Bot Owner", "Administrator", "Manage Roles", "Manage Channels"},
+		UserPermissions: []string{"Bot Owner", "Manage Channels"},
 		ArgsDelim:       "",
-		ArgsUsage:       "",
-		Description:     "Locks a channel (prevent message sending) for the default @everyone permission.",
+		Usage:           []string{},
+		Description:     "Locks a channel (prevents SEND_MESSAGES) for the default @everyone permission.",
 	})
 
 	RegisterNewCommand(Command{
@@ -88,10 +88,10 @@ func init() {
 		IgnoreBots:      true,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{},
-		UserPermissions: []string{"Bot Owner", "Administrator", "Manage Roles", "Manage Channels"},
+		UserPermissions: []string{"Bot Owner", "Manage Channels"},
 		ArgsDelim:       "",
-		ArgsUsage:       "",
-		Description:     "Unlocks a channel (allows message sending) for the default @everyone permission.",
+		Usage:           []string{},
+		Description:     "Unlocks a channel (grants SEND_MESSAGES) for the default @everyone permission.",
 	})
 
 	RegisterNewCommand(Command{
@@ -103,10 +103,10 @@ func init() {
 		IgnoreBots:      true,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{},
-		UserPermissions: []string{"Bot Owner", "Administrator", "Kick Members"},
+		UserPermissions: []string{"Bot Owner", "Kick Members"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<@member(s)|ID(s)|Name(s)> [warnings|mutes|kicks|bans]",
-		Description:     "Checks the warnings, mutes, kicks, and bans of a mentioned user.",
+		Usage:           []string{"<@Member(s)|ID(s)|Name#xxxx(s)>", "[warnings|mutes|kicks|bans|nicknames|usernames]"},
+		Description:     "Checks the warnings, mutes, kicks, bans, nicknames, and usernames of a mentioned user.",
 	})
 }
 
@@ -379,7 +379,7 @@ func Ban(ctx Context) {
 }
 
 // Lock :
-// Overrides default @everyone permission and prevents "SEND MESSAGES" permission.
+// Overrides default @everyone permission and prevents "SEND_MESSAGES" permission.
 func Lock(ctx Context) {
 
 	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
@@ -408,8 +408,9 @@ func Lock(ctx Context) {
 }
 
 // Unlock :
-// Overrides default @everyone permission and allows "SEND MESSAGES" permission.
+// Overrides default @everyone permission and allows "SEND_MESSAGES" permission.
 func Unlock(ctx Context) {
+
 	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
 
 	// Get first role on the list, which is @everyone
@@ -572,7 +573,7 @@ func Check(ctx Context) {
 					embed := &discordgo.MessageEmbed{
 						Title:       fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
 						Color:       RandomInt(0, 16777215),
-						Description: fmt.Sprintf("Run `%scheck <@member|ID|Name> [warnings/mutes/kicks/bans]` for a complete list of information.", g.GuildPrefix),
+						Description: fmt.Sprintf("Run `%scheck <@member|ID|Name> [warnings|mutes|kicks|bans]` for a complete list of information.", g.GuildPrefix),
 						Thumbnail: &discordgo.MessageEmbedThumbnail{
 							URL:    member.AvatarURL("2048"),
 							Width:  2048,

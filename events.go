@@ -39,6 +39,9 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			log.Println(err)
 		}
 
+		// Registers a new guild if not done already
+		RegisterNewGuild(guild)
+
 		data, err := redis.Bytes(p.Do("GET", guild.ID))
 
 		if err != nil {
@@ -74,6 +77,16 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		// Registers a new guild if not done already
 		RegisterNewGuild(ctx.Guild)
+
+		data, err := redis.Bytes(p.Do("GET", guild.ID))
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		var g Guild
+		err = json.Unmarshal(data, &g)
+		prefix = g.GuildPrefix
 	}
 
 	// Returns a valid command using a name/alias
@@ -126,7 +139,7 @@ func GuildCreate(s *discordgo.Session, m *discordgo.GuildCreate) {
 	_, err := RegisterNewGuild(m.Guild)
 
 	if err != nil {
-		log.Panicln(err)
+		log.Println(err)
 	}
 
 	log.Println(fmt.Sprintf("== New Guild Added ==\nGuild Name: %s\nGuild ID:   %s\n", m.Guild.Name, m.Guild.ID))
@@ -144,7 +157,7 @@ func GuildDelete(s *discordgo.Session, m *discordgo.GuildDelete) {
 	_, err := DeleteGuild(m.Guild)
 
 	if err != nil {
-		log.Panicln(err)
+		log.Println(err)
 	}
 
 	log.Println(fmt.Sprintf("== Guild Removed ==\nGuild Name: %s\nGuild ID:   %s\n", m.Guild.Name, m.Guild.ID))
@@ -178,14 +191,24 @@ func GuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	// Register the new user in the guild databsae
-	RegisterNewUser(Context{
-		Session: s,
-		Guild:   guild,
-	}, m.User)
+	// Search the database to see if the user already exists
+	found := false
+	for _, v := range g.GuildUser {
+		if v.User.ID == m.User.ID {
+			found = true
+		}
+	}
+
+	// Register the new user in the guild database
+	if found != true {
+		RegisterNewUser(Context{
+			Session: s,
+			Guild:   guild,
+		}, m.User)
+	}
 
 	// Send a formatted message to the welcome channel
-	if len(g.WelcomeChannel.ID) != 0 && len(g.WelcomeMessage) != 0 {
+	if g.WelcomeChannel != nil && len(g.WelcomeMessage) != 0 {
 
 		// Format welcome message
 		msg := FormatWelcomeGoodbyeMessage(guild, m.Member, g.WelcomeMessage)
@@ -198,7 +221,7 @@ func GuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 	}
 
 	// Send a formatted message to the welcome logger channel
-	if len(g.MemberAddChannel.ID) != 0 && len(g.MemberAddMessage) != 0 {
+	if g.MemberAddChannel != nil && len(g.MemberAddMessage) != 0 {
 
 		// Format welcome message
 		msg := FormatWelcomeGoodbyeMessage(guild, m.Member, g.MemberAddMessage)
@@ -239,7 +262,7 @@ func GuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRemove) {
 	}
 
 	// Send a formatted message to the goodbye channel
-	if len(g.GoodbyeChannel.ID) != 0 && len(g.GoodbyeMessage) != 0 {
+	if g.GoodbyeChannel != nil && len(g.GoodbyeMessage) != 0 {
 
 		// Format goodbye message
 		msg := FormatWelcomeGoodbyeMessage(guild, m.Member, g.GoodbyeMessage)
@@ -252,7 +275,7 @@ func GuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRemove) {
 	}
 
 	// Send a formatted message to the goodbye logger channel
-	if len(g.MemberRemoveChannel.ID) != 0 && len(g.MemberRemoveMessage) != 0 {
+	if g.MemberRemoveChannel != nil && len(g.MemberRemoveMessage) != 0 {
 
 		// Format goodbye message
 		msg := FormatWelcomeGoodbyeMessage(guild, m.Member, g.MemberRemoveMessage)

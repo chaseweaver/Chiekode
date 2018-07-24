@@ -27,8 +27,8 @@ func init() {
 		Aliases:         []string{},
 		UserPermissions: []string{},
 		ArgsDelim:       "",
-		ArgsUsage:       "",
-		Description:     "Pong!",
+		Usage:           []string{},
+		Description:     "Pong! Responds with the heartbeat.",
 	})
 
 	RegisterNewCommand(Command{
@@ -42,7 +42,7 @@ func init() {
 		Aliases:         []string{"e"},
 		UserPermissions: []string{"Bot Owner"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "<golang expression>",
+		Usage:           []string{"<golang expression>"},
 		Description:     "Evaluation command for bot-owner only.",
 	})
 
@@ -57,8 +57,8 @@ func init() {
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "",
-		Description:     "Bot owner testing function.",
+		Usage:           []string{},
+		Description:     "Bot-owner testing function.",
 	})
 }
 

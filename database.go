@@ -16,22 +16,24 @@ type (
 
 	// Guild configuration information per guild
 	Guild struct {
-		Guild               *discordgo.Guild
-		GuildPrefix         string
-		WelcomeMessage      string
-		GoodbyeMessage      string
-		MemberAddMessage    string
-		MemberRemoveMessage string
-		WelcomeChannel      *discordgo.Channel
-		GoodbyeChannel      *discordgo.Channel
-		MemberAddChannel    *discordgo.Channel
-		MemberRemoveChannel *discordgo.Channel
-		GuildUser           []GuildUser
-		BlacklistedMembers  []*discordgo.User
-		BlacklistedChannels []*discordgo.Channel
-		AutoRole            []*discordgo.Role
-		MutedRole           *discordgo.Role
-		DisabledCommands    []Command
+		Guild                *discordgo.Guild
+		GuildPrefix          string
+		WelcomeMessage       string
+		GoodbyeMessage       string
+		MemberAddMessage     string
+		MemberRemoveMessage  string
+		WelcomeChannel       *discordgo.Channel
+		GoodbyeChannel       *discordgo.Channel
+		MemberAddChannel     *discordgo.Channel
+		MemberRemoveChannel  *discordgo.Channel
+		MessageEditChannel   *discordgo.Channel
+		MessageDeleteChannel *discordgo.Channel
+		GuildUser            []GuildUser
+		BlacklistedUsers     []*discordgo.User
+		BlacklistedChannels  []*discordgo.Channel
+		AutoRole             []*discordgo.Role
+		MutedRole            *discordgo.Role
+		DisabledCommands     []Command
 	}
 
 	// GuildUser information
@@ -174,22 +176,8 @@ func RegisterNewGuild(guild *discordgo.Guild) (interface{}, error) {
 // Creates a new guild user with user defaults.
 func RegisterNewUser(ctx Context, user *discordgo.User) GuildUser {
 
-	// Fetch guild member information
-	member, err := ctx.Session.GuildMember(ctx.Guild.ID, user.ID)
-
-	if err != nil {
-		log.Println(err)
-	}
-
 	// Fetch Account creation time
-	age, err := CreationTime(member.User.ID)
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	// Fetch member joined time
-	joined, err := time.Parse(time.RFC3339Nano, member.JoinedAt)
+	age, err := CreationTime(user.ID)
 
 	if err != nil {
 		log.Println(err)
@@ -197,9 +185,7 @@ func RegisterNewUser(ctx Context, user *discordgo.User) GuildUser {
 
 	return GuildUser{
 		User:              user,
-		Member:            member,
 		Age:               age.Format("01/02/06 03:04:05 PM MST"),
-		JoinedAt:          joined.Format("01/02/06 03:04:05 PM MST"),
 		PreviousUsernames: []string{},
 		PreviousNicknames: []string{},
 		Roles:             []*discordgo.Role{},
@@ -230,23 +216,25 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 	}
 
 	found := false
-	var index int
 
 	for u := range g.GuildUser {
 		if g.GuildUser[u].User.ID == mem.ID {
 			found = true
-			index = u
 		}
 	}
 
 	if found {
-		g.GuildUser[index].Warnings = append(g.GuildUser[index].Warnings, Warnings{
-			AuthorUser: ctx.Event.Author,
-			TargetUser: mem,
-			Channel:    ctx.Channel,
-			Reason:     reason,
-			Time:       time.Now(),
-		})
+		for u := range g.GuildUser {
+			if g.GuildUser[u].User.ID == mem.ID {
+				g.GuildUser[u].Warnings = append(g.GuildUser[u].Warnings, Warnings{
+					AuthorUser: ctx.Event.Author,
+					TargetUser: mem,
+					Channel:    ctx.Channel,
+					Reason:     reason,
+					Time:       time.Now(),
+				})
+			}
+		}
 	} else {
 		newUser := RegisterNewUser(ctx, mem)
 		newUser.Warnings = append(newUser.Warnings, Warnings{
@@ -291,23 +279,25 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 	}
 
 	found := false
-	var index int
 
 	for u := range g.GuildUser {
 		if g.GuildUser[u].User.ID == mem.ID {
 			found = true
-			index = u
 		}
 	}
 
 	if found {
-		g.GuildUser[index].Kicks = append(g.GuildUser[index].Kicks, Kicks{
-			AuthorUser: ctx.Event.Author,
-			TargetUser: mem,
-			Channel:    ctx.Channel,
-			Reason:     reason,
-			Time:       time.Now(),
-		})
+		for u := range g.GuildUser {
+			if g.GuildUser[u].User.ID == mem.ID {
+				g.GuildUser[u].Kicks = append(g.GuildUser[u].Kicks, Kicks{
+					AuthorUser: ctx.Event.Author,
+					TargetUser: mem,
+					Channel:    ctx.Channel,
+					Reason:     reason,
+					Time:       time.Now(),
+				})
+			}
+		}
 	} else {
 		newUser := RegisterNewUser(ctx, mem)
 		newUser.Kicks = append(newUser.Kicks, Kicks{
@@ -352,23 +342,25 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 	}
 
 	found := false
-	var index int
 
 	for u := range g.GuildUser {
 		if g.GuildUser[u].User.ID == mem.ID {
 			found = true
-			index = u
 		}
 	}
 
 	if found {
-		g.GuildUser[index].Bans = append(g.GuildUser[index].Bans, Bans{
-			AuthorUser: ctx.Event.Author,
-			TargetUser: mem,
-			Channel:    ctx.Channel,
-			Reason:     reason,
-			Time:       time.Now(),
-		})
+		for u := range g.GuildUser {
+			if g.GuildUser[u].User.ID == mem.ID {
+				g.GuildUser[u].Bans = append(g.GuildUser[u].Bans, Bans{
+					AuthorUser: ctx.Event.Author,
+					TargetUser: mem,
+					Channel:    ctx.Channel,
+					Reason:     reason,
+					Time:       time.Now(),
+				})
+			}
+		}
 	} else {
 		newUser := RegisterNewUser(ctx, mem)
 		newUser.Bans = append(newUser.Bans, Bans{

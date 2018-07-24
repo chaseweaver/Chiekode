@@ -1,10 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"sort"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/gomodule/redigo/redis"
 )
 
 /**
@@ -22,12 +26,12 @@ func init() {
 		NSFWOnly:        false,
 		IgnoreSelf:      true,
 		IgnoreBots:      true,
-		RunIn:           []string{"Text", "DM"},
+		RunIn:           []string{"Text"},
 		Aliases:         []string{},
 		UserPermissions: []string{},
 		ArgsDelim:       " ",
-		ArgsUsage:       "[command]",
-		Description:     "Displays a helpful help menu.",
+		Usage:           []string{"[Command Name]"},
+		Description:     "Displays a helpful help menu for all commands, or just one.",
 	})
 
 	RegisterNewCommand(Command{
@@ -41,46 +45,160 @@ func init() {
 		Aliases:         []string{"pfp", "icon"},
 		UserPermissions: []string{},
 		ArgsDelim:       " ",
-		ArgsUsage:       "[@member|ID]",
-		Description:     "Fetches the avatar/pfp for the requested member.",
+		Usage:           []string{"[@Member(s)|ID(s)|Name(s)]"},
+		Description:     "Fetches the avatar for the requested member, or command author.",
 	})
 }
 
 // Help :
 // Returns help per all-basis or per command-basis
 func Help(ctx Context) {
-	if len(ctx.Args) > 0 {
 
-		c := FetchCommand(ctx.Command.Name)
-		str := fmt.Sprintf("== %s ==\n", c.Name)
-		tmp := c.ArgsDelim
-		na := c.Name
+	// Delete author command
+	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
 
-		if c.ArgsDelim == " " {
-			tmp = "[SPACE]"
+	if len(ctx.Args) == 0 {
+
+		help := "== Helpful Help Menu ==\n\n"
+		tmp := []string{}
+
+		// Fetch commands the user has permissions to run
+		for _, v := range commands {
+			if len(v.UserPermissions) == 0 {
+				tmp = append(tmp, fmt.Sprintf("%-10s::  %s", v.Name, v.Description))
+			} else {
+				isValid := false
+				for _, k := range v.UserPermissions {
+					if MemberHasPermission(ctx, k) {
+						isValid = true
+					}
+				}
+				if isValid {
+					tmp = append(tmp, fmt.Sprintf("%-10s::  %s", v.Name, v.Description))
+				}
+			}
 		}
 
-		if len(c.Aliases) > 0 {
-			na = c.Name + "|" + strings.Join(c.Aliases, "|")
+		// Sort commands by alphabetical order
+		sort.Strings(tmp)
+
+		// Index command numbers
+		index := 1
+		for _, v := range tmp {
+			help += fmt.Sprintf("%2d. %s\n", index, v)
+			index++
 		}
 
-		str += fmt.Sprintf(
-			"Command     ::  %s\n"+
-				"Description ::  %s\n"+
-				"Usage       ::  %s\n"+
-				"Run In      ::  %s\n"+
-				"Arg Delim   ::  %s\n",
-			c.Name,
-			c.Description,
-			fmt.Sprintf("%s<%s> %s", conf.Prefix, na, c.ArgsUsage),
-			strings.Join(c.RunIn, ", "), tmp)
-		ctx.Session.ChannelMessageSend(ctx.Channel.ID, FormatString(str, "asciidoc"))
+		// Creates DM channel between bot and message author
+		channel, err := ctx.Session.UserChannelCreate(ctx.Event.Author.ID)
+
+		// Return if the user has DMs blocked
+		if err != nil {
+			ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("<@%s>, I cannot DM you the commands because either I am blocked or you do not accept messages!", ctx.Event.Author.ID))
+			log.Println(err)
+			return
+		}
+
+		// Send a message to the channel indicating the command list has been sent to the command author
+		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("<@%s>, 📥 I have sent the command list to your inbox!", ctx.Event.Author.ID))
+
+		// DM the command author
+		_, err = ctx.Session.ChannelMessageSend(channel.ID, FormatString(help, "asciidoc"))
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		// Delete the bot response
+		DeleteMessageWithTime(ctx, msg.ID, 7500)
+
+		if err != nil {
+			log.Println(err)
+			return
+		}
 	} else {
-		str := "== Help ==\n\n"
-		for k := range commands {
-			str += fmt.Sprintf("%s:\n\t%s\n", commands[k].Name, commands[k].Description)
+
+		// Fetch command from message args
+		cmd := FetchCommand(strings.Join(ctx.Args, ctx.Command.ArgsDelim))
+
+		// Return if the args cannot find the requested command
+		if &cmd == nil {
+			ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` is not a valid command!", strings.Join(ctx.Args, ctx.Command.ArgsDelim)))
+			return
 		}
-		ctx.Session.ChannelMessageSend(ctx.Channel.ID, FormatString(str, "asciidoc"))
+
+		// Return if the user doesn't have permissions to run said command
+		isValid := false
+		if len(cmd.UserPermissions) == 0 {
+			isValid = true
+		} else {
+			for _, v := range cmd.UserPermissions {
+				if MemberHasPermission(ctx, v) {
+					isValid = true
+				}
+			}
+		}
+
+		if !isValid {
+			return
+		}
+
+		// Get guild information from database
+		data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+		if err != nil {
+			log.Println(err)
+		}
+
+		var g Guild
+		err = json.Unmarshal(data, &g)
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		runIn := strings.Join(cmd.RunIn, ", ")
+		aliases := strings.Join(cmd.Aliases, ", ")
+		permissions := strings.Join(cmd.UserPermissions, ", ")
+		usage := g.GuildPrefix + cmd.Name + strings.Join(cmd.Usage, cmd.ArgsDelim)
+
+		if len(cmd.Aliases) == 0 {
+			aliases = "N/A"
+		}
+
+		if len(cmd.UserPermissions) == 0 {
+			permissions = "N/A"
+		}
+
+		help := fmt.Sprintf("== %s Help ==\n\nName        :: %s\nRuns In     :: %s\nAliases     :: %s\nPermissions :: %s\nUsage       :: %s\nDescription :: %s", cmd.Name, cmd.Name, runIn, aliases, permissions, usage, cmd.Description)
+
+		// Creates DM channel between bot and message author
+		channel, err := ctx.Session.UserChannelCreate(ctx.Event.Author.ID)
+
+		// Return if the user has DMs blocked
+		if err != nil {
+			ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("<@%s>, I cannot DM you the commands because either I am blocked or you do not accept messages!", ctx.Event.Author.ID))
+			log.Println(err)
+			return
+		}
+
+		// Send a message to the channel indicating the command list has been sent to the command author
+		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("<@%s>, 📥 I have sent the command list to your inbox!", ctx.Event.Author.ID))
+
+		// DM the command author
+		_, err = ctx.Session.ChannelMessageSend(channel.ID, FormatString(help, "asciidoc"))
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		// Delete the bot response
+		DeleteMessageWithTime(ctx, msg.ID, 7500)
+
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
 	}
 }
 

@@ -47,7 +47,7 @@ func FormatWelcomeGoodbyeMessage(g *discordgo.Guild, m *discordgo.Member, s stri
 
 	// Username#xxxx
 	if strings.Contains(msg, "$MEMBER_NAME$") {
-		msg = strings.Replace(msg, "$MEMBER_NAME$", m.User.Username+"#"+m.User.Username, -1)
+		msg = strings.Replace(msg, "$MEMBER_NAME$", m.User.Username+"#"+m.User.Discriminator, -1)
 	}
 
 	// @Member

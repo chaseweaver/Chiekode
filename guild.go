@@ -1,5 +1,16 @@
 package main
 
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"strings"
+
+	"github.com/bwmarrin/discordgo"
+
+	"github.com/gomodule/redigo/redis"
+)
+
 func init() {
 	RegisterNewCommand(Command{
 		Name:            "settings",
@@ -12,7 +23,7 @@ func init() {
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner"},
 		ArgsDelim:       " ",
-		ArgsUsage:       "[settings name]",
+		Usage:           []string{"[Guild Setting]"},
 		Description:     "Lists guild configurations.",
 	})
 
@@ -26,218 +37,191 @@ func init() {
 		RunIn:           []string{"Text"},
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner"},
-		ArgsDelim:       " ",
-		ArgsUsage:       "<settings name> <value>",
+		ArgsDelim:       " | ",
+		Usage:           []string{"<Guild Setting>", "<value>"},
 		Description:     "Sets guild configurations.",
 	})
 }
 
 // Settings lists database guild configurations
 func Settings(ctx Context) {
-	/*
-		data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
-		if err != nil {
-			panic(err.Error())
-		}
 
-		var g Guild
-		err = json.Unmarshal(data, &g)
+	// Fetch guild settings
+	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+	if err != nil {
+		panic(err.Error())
+	}
 
-		key := strings.ToUpper(strings.Join(ctx.Args, " "))
-		if len(key) == 0 {
-			str := fmt.Sprintf(
-				"== %s Configuration ==\n\n"+
-					"Guild Prefix          ::   %s\n"+
-					"Blacklisted Channel   ::   %d\n"+
-					"Blacklisted Members   ::   %d\n"+
-					"Welcome Message       ::   %s\n"+
-					"Welcome Channel       ::   %s\n"+
-					"Goodbye Message       ::   %s\n"+
-					"Goodbye Channel       ::   %s\n"+
-					"Events                ::   %d\n"+
-					"Disabled Commands     ::   %d\n"+
-					"Birthday Role         ::   %s\n"+
-					"Muted Role            ::   %s\n"+
-					"Auto Roles            ::   %d",
-				g.Guild.Name, g.GuildPrefix, len(g.BlacklistedChannels), len(g.BlacklistedMembers),
-				g.WelcomeMessage, g.WelcomeChannel, g.GoodbyeMessage, g.GoodbyeChannel, len(g.Events),
-				len(g.DisabledCommands), g.BirthdayRole, g.MutedRole, len(g.AutoRole))
+	var g Guild
+	err = json.Unmarshal(data, &g)
 
-			ctx.Session.ChannelMessageSend(ctx.Channel.ID, FormatString(str, "asciidoc"))
-			return
-		}
+	var blc, blu, ar []string
+	for _, v := range g.BlacklistedChannels {
+		blc = append(blc, v.Name)
+	}
 
-		var set, val string
-		switch key {
-		case "PREFIX":
-			fallthrough
-		case "GUILD PREFIX":
-			val = "GUILD PREFIX"
-			set = g.GuildPrefix
-		case "BLACKLISTED CHANNEL":
-			fallthrough
-		case "BLACKLISTED CHANNELS":
-			var str string
-			for _, v := range g.BlacklistedChannels {
-				str += v.Name + ", "
-			}
+	for _, v := range g.BlacklistedUsers {
+		blu = append(blu, v.Username+"#"+v.Discriminator)
+	}
 
-			str = TrimSuffix(str, ", ")
+	for _, v := range g.AutoRole {
+		ar = append(ar, v.Name)
+	}
 
-			val = "BLACKLISTED CHANNELS"
-			set = str
-		case "BLACKLISTED MEMBER":
-			fallthrough
-		case "BLACKLISTED MEMBERS":
-			var str string
-			for _, v := range g.BlacklistedMembers {
-				str += v.Username + ", "
-			}
+	wc := " "
+	if g.WelcomeChannel != nil {
+		wc = g.WelcomeChannel.Name
+	}
 
-			str = TrimSuffix(str, ", ")
+	gc := " "
+	if g.GoodbyeChannel != nil {
+		gc = g.WelcomeChannel.Name
+	}
 
-			val = "BLACKLISTED MEMBERS"
-			set = str
-		case "WELCOME MESSAGE":
-			val = "WELCOME MESSAGE"
-			set = g.WelcomeMessage
-		case "WELCOME CHANNEL":
-			val = "WELCOME CHANNEL"
-			set = g.WelcomeChannel
-		case "GOODBYE MESSAGE":
-			val = "GOODBYE MESSAGE"
-			set = g.GoodbyeMessage
-		case "GOODBYE CHANNEL":
-			val = "GOODBYE CHANNEL"
-			set = g.GoodbyeChannel
-		case "EVENTS":
-			val = "EVENTS"
-			set = strings.Join(g.Events, ", ")
-		case "DISABLED":
-			fallthrough
-		case "DISABLED COMMANDS":
-			val = "DISABLED COMMANDS"
-			set = strings.Join(g.DisabledCommands, ", ")
-		case "BIRTHDAY":
-			fallthrough
-		case "BIRTHDAY ROLE":
-			val = "BIRTHDAY ROLE"
-			set = g.BirthdayRole
-		case "MUTED":
-			fallthrough
-		case "MUTED ROLE":
-			val = "MUTED ROLE"
-			set = g.MutedRole
-		case "AUTO":
-			fallthrough
-		case "AUTO ROLE":
-			fallthrough
-		case "AUTO ROLES":
-			val = "AUTO ROLES"
-			set = strings.Join(g.AutoRole, ", ")
-		default:
-			ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("I could not find the guild setting `%s`", key))
-			return
-		}
+	str := fmt.Sprintf(
+		"== %s Configuration ==\n\n"+
+			"Guild Prefix          ::   %s\n"+
+			"Blacklisted Channel   ::   %s\n"+
+			"Blacklisted Members   ::   %s\n"+
+			"Welcome Message       ::   %s\n"+
+			"Welcome Channel       ::   %s\n"+
+			"Goodbye Message       ::   %s\n"+
+			"Goodbye Channel       ::   %s\n"+
+			"Muted Role            ::   %s\n"+
+			"Auto Roles            ::   %d",
+		g.Guild.Name, g.GuildPrefix, strings.Join(blc, ", "), strings.Join(blu, ", "),
+		g.WelcomeMessage, wc, g.GoodbyeMessage, gc, " ", strings.Join(ar, ", "))
 
-		if len(set) == 0 {
-			ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` does not have a set value.", val))
-		} else {
-			ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has the value of: %s", val, set))
-		}
-	*/
+	ctx.Session.ChannelMessageSend(ctx.Channel.ID, FormatString(str, "asciidoc"))
 }
 
-// Set allows configration of database guild settings
+// Set :
+// Allows configration of database guild settings
 func Set(ctx Context) {
-	/*
-		data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+
+	// Fetch guild settings
+	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+	if err != nil {
+		log.Println(err)
+	}
+
+	var g Guild
+	err = json.Unmarshal(data, &g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Return if Guild Setting cannot be found
+	if len(ctx.Args) <= 1 {
+		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("Invalid settings key/value. Run `%shelp` for more information.", g.GuildPrefix))
+
 		if err != nil {
 			log.Println(err)
 		}
 
-		var g Guild
-		err = json.Unmarshal(data, &g)
+		DeleteMessageWithTime(ctx, msg.ID, 7500)
+		return
+	}
 
-		if err != nil {
-			log.Println(err)
-		}
+	// Get the Guild Setting to configure
+	key := strings.ToUpper(ctx.Args[0])
+	val := strings.Join(ctx.Args[1:], ctx.Command.ArgsDelim)
 
-		key := strings.ToUpper(strings.Join(ctx.Args, " "))
-		if len(key) == 0 {
-			ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("Invalid settings key. Run `%shelp` for more information.", g.GuildPrefix))
+	switch key {
+	case "PREFIX":
+		fallthrough
+	case "GUILD PREFIX":
+		g.GuildPrefix = val
+	case "BLACKLISTED CHANNEL":
+		fallthrough
+	case "BLACKLISTED CHANNELS":
+		channels := FetchMessageContentChannels(ctx, val)
+
+		if len(channels) == 0 {
 			return
 		}
 
-		var set, val string
-		switch key {
-		case "PREFIX":
-			fallthrough
-		case "GUILD PREFIX":
-			val = "GUILD PREFIX"
-			set = g.GuildPrefix
-		case "BLACKLISTED CHANNEL":
-			fallthrough
-		case "BLACKLISTED CHANNELS":
-			val = "BLACKLISTED CHANNELS"
-			set = strings.Join(g.BlacklistedChannels, ", ")
-		case "BLACKLISTED MEMBER":
-			fallthrough
-		case "BLACKLISTED MEMBERS":
-			val = "BLACKLISTED MEMBERS"
-			set = strings.Join(g.BlacklistedMembers, ", ")
-		case "WELCOME MESSAGE":
-			val = "WELCOME MESSAGE"
-			set = g.WelcomeMessage
-		case "WELCOME CHANNEL":
-			val = "WELCOME CHANNEL"
-			set = g.WelcomeChannel
-		case "GOODBYE MESSAGE":
-			val = "GOODBYE MESSAGE"
-			set = g.GoodbyeMessage
-		case "GOODBYE CHANNEL":
-			val = "GOODBYE CHANNEL"
-			set = g.GoodbyeChannel
-		case "EVENTS":
-			val = "EVENTS"
-			set = strings.Join(g.Events, ", ")
-		case "DISABLED":
-			fallthrough
-		case "DISABLED COMMANDS":
-			val = "DISABLED COMMANDS"
-			set = strings.Join(g.DisabledCommands, ", ")
-		case "BIRTHDAY":
-			fallthrough
-		case "BIRTHDAY ROLE":
-			val = "BIRTHDAY ROLE"
-			set = g.BirthdayRole
-		case "MUTED":
-			fallthrough
-		case "MUTED ROLE":
-			val = "MUTED ROLE"
-			set = g.MutedRole
-		case "AUTO":
-			fallthrough
-		case "AUTO ROLE":
-			fallthrough
-		case "AUTO ROLES":
-			val = "AUTO ROLES"
-			set = strings.Join(g.AutoRole, ", ")
-		default:
-			ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("I could not find the guild setting `%s`", key))
+		for _, v := range channels {
+			g.BlacklistedChannels = append(g.BlacklistedChannels, v)
+		}
+	case "BLACKLISTED USER":
+		fallthrough
+	case "BLACKLISTED USERS":
+		g.BlacklistedUsers = []*discordgo.User{}
+		users := FetchMessageContentUsers(ctx, val)
+
+		if len(users) == 0 {
 			return
 		}
 
-		serialized, err := json.Marshal(g)
+		for _, v := range users {
+			g.BlacklistedUsers = append(g.BlacklistedUsers, v)
+		}
+	case "WELCOME MESSAGE":
+		g.WelcomeMessage = val
+	case "WELCOME CHANNEL":
+		channels := FetchMessageContentChannels(ctx, val)
 
-		if err != nil {
-			log.Println(err)
+		if len(channels) == 0 {
+			return
 		}
 
-		_, err = p.Do("SET", ctx.Guild.ID, serialized)
-		if err != nil {
-			log.Println(err)
+		g.WelcomeChannel = channels[0]
+	case "GOODBYE MESSAGE":
+		g.GoodbyeMessage = val
+	case "GOODBYE CHANNEL":
+		channels := FetchMessageContentChannels(ctx, val)
+
+		if len(channels) == 0 {
 			return
-		}*/
+		}
+
+		g.GoodbyeChannel = channels[0]
+	case "DISABLED":
+		fallthrough
+	case "DISABLED COMMANDS":
+		return
+	case "MUTED":
+		fallthrough
+	case "MUTED ROLE":
+		role := FetchMessageContentRoles(ctx, val)
+
+		if len(role) == 0 {
+			return
+		}
+
+		g.MutedRole = role[0]
+	case "AUTO":
+		fallthrough
+	case "AUTO ROLE":
+		fallthrough
+	case "AUTO ROLES":
+		g.AutoRole = []*discordgo.Role{}
+		roles := FetchMessageContentRoles(ctx, val)
+
+		if len(roles) == 0 {
+			return
+		}
+
+		for _, v := range roles {
+			g.AutoRole = append(g.AutoRole, v)
+		}
+	default:
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("I could not find the guild setting `%s`", key))
+		return
+	}
+
+	serialized, err := json.Marshal(g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	_, err = p.Do("SET", ctx.Guild.ID, serialized)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 }
