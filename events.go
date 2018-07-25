@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gomodule/redigo/redis"
@@ -21,6 +22,9 @@ import (
 // Triggers on a message that is visible to the bot.
 // Handles message and command responses.
 func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+	// Loads Message into temp cache
+	c.Set(m.ID, m.Message, 0)
 
 	// Default bot prefix
 	prefix := conf.Prefix
@@ -272,6 +276,7 @@ func GuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRemove) {
 			log.Println(err)
 			return
 		}
+
 	}
 
 	// Send a formatted message to the goodbye logger channel
@@ -285,5 +290,134 @@ func GuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRemove) {
 			log.Println(err)
 			return
 		}
+
 	}
+}
+
+// MessageDelete :
+// This should be reworked to include > 1024 character limit
+// Logs deleted message to specified guild channel.
+func MessageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
+
+	// Fetch message from cache
+	msg, found := c.Get(m.ID)
+	if !found {
+		return
+	}
+
+	// Get cached message object
+	mo := msg.(*discordgo.Message)
+
+	// Ignore messages deleted by bots
+	if mo.Author.Bot {
+		return
+	}
+
+	// Fetch Guild information from redis database
+	data, err := redis.Bytes(p.Do("GET", m.GuildID))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var g Guild
+	err = json.Unmarshal(data, &g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Send deleted message to the guild deleted-channel
+	if g.MessageDeleteChannel != nil {
+
+		s.ChannelMessageSendEmbed(g.MessageDeleteChannel.ID, &discordgo.MessageEmbed{
+			Title: "Deleted Message",
+			Color: deleteColor,
+			Author: &discordgo.MessageEmbedAuthor{
+				URL:     mo.Author.AvatarURL("2048"),
+				IconURL: mo.Author.AvatarURL("256"),
+				Name:    fmt.Sprintf("%s#%s / %s", mo.Author.Username, mo.Author.Discriminator, mo.Author.ID),
+			},
+			Fields: []*discordgo.MessageEmbedField{
+				&discordgo.MessageEmbedField{
+					Name:   "Channel",
+					Value:  fmt.Sprintf("<#%s>", mo.ChannelID),
+					Inline: false,
+				},
+				&discordgo.MessageEmbedField{
+					Name:   "Content",
+					Value:  mo.Content,
+					Inline: false,
+				},
+			},
+			Timestamp: time.Now().Format(time.RFC3339),
+		})
+	}
+}
+
+// MessageUpdate :
+// This should be reworked to include > 1024 character limit
+// Logs edited message to specified guild channel.
+func MessageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) {
+
+	// Fetch message from cache
+	msg, found := c.Get(m.ID)
+	if !found {
+		return
+	}
+
+	// Get cached message object
+	mo := msg.(*discordgo.Message)
+
+	// Ignore messages edited by bots
+	if mo.Author.Bot {
+		return
+	}
+
+	// Fetch Guild information from redis database
+	data, err := redis.Bytes(p.Do("GET", m.GuildID))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var g Guild
+	err = json.Unmarshal(data, &g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Send edited message to the guild edited-channel
+	if g.MessageEditChannel != nil {
+
+		s.ChannelMessageSendEmbed(g.MessageEditChannel.ID, &discordgo.MessageEmbed{
+			Title: "Edited Message",
+			Color: editColor,
+			Author: &discordgo.MessageEmbedAuthor{
+				URL:     mo.Author.AvatarURL("2048"),
+				IconURL: mo.Author.AvatarURL("256"),
+				Name:    fmt.Sprintf("%s#%s / %s", mo.Author.Username, mo.Author.Discriminator, mo.Author.ID),
+			},
+			Fields: []*discordgo.MessageEmbedField{
+				&discordgo.MessageEmbedField{
+					Name:   "Channel",
+					Value:  fmt.Sprintf("<#%s>", m.ChannelID),
+					Inline: false,
+				},
+				&discordgo.MessageEmbedField{
+					Name:   "Old Content",
+					Value:  mo.Content,
+					Inline: false,
+				},
+				&discordgo.MessageEmbedField{
+					Name:   "New Content",
+					Value:  m.Content,
+					Inline: false,
+				},
+			},
+			Timestamp: time.Now().Format(time.RFC3339),
+		})
+	}
+
 }
