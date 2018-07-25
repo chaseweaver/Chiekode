@@ -24,6 +24,7 @@ Example and templates are shown below.
     * Follow the install for the developer branch of [Discordgo](https://github.com/bwmarrin/discordgo)
     * Also install [gonfig](https://github.com/Tkanos/gonfig) using the same process.
     * And again [redigo](https://github.com/gomodule/redigo)
+    * And again again [go-cahce](https://github.com/patrickmn/go-cache)
 3. Rename `config.ex.json` to `config.json`
 4. Register a bot account at [Discord App Developers](https://discordapp.com/developers/docs/intro)
 5. Grab bot `Token` and paste it in the newly renamed `config.json` file.
@@ -59,7 +60,7 @@ Example and templates are shown below.
             Aliases:         []string{"nameone", "nametwo"},
             UserPermissions: []string{"Kick Members"},
             ArgsDelim:       " ",
-            ArgsUsage:       "Example of how to run command here",
+            Usage:           []string{"<@Member>", "Other"},
             Description:     "Description Here",
         })
 
@@ -101,7 +102,7 @@ This is to be passed in for each func call:
 | Aliases         | Other names the command will execute under                           | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | UserPermissions | Permissions the user needs in order for the command to execute       | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | ArgsDelim       | Seperator that will parse individual arguments                       | [string](https://golang.org/pkg/builtin/#string)       |
-| ArgsUsage       | Example of how to run the command, used for `help`                   | [string](https://golang.org/pkg/builtin/#string)       |
+| Usage           | Example of how to run the command, used for `help`                   | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | Description     | Description of the command, used for `help`                          | [string](https://golang.org/pkg/builtin/#string)       |
 
 
