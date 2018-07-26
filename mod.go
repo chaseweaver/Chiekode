@@ -117,10 +117,6 @@ func Warn(ctx Context) {
 	// Fetch users from message content, returns list of members and the remaining string with the member removed
 	members, reason := FetchMessageContentUsersString(ctx, strings.Join(ctx.Args, ctx.Command.ArgsDelim))
 
-	log.Println(ctx.Args)
-	log.Println(strings.Join(ctx.Args, ctx.Command.ArgsDelim))
-	log.Println(members)
-
 	// Returns if a user cannot be found in the message, deletes command message, then deletes delayed response
 	if len(members) == 0 {
 		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
@@ -239,15 +235,6 @@ func Kick(ctx Context) {
 			return
 		}
 
-		// Kicks the guild member with given reason
-		err = ctx.Session.GuildMemberDeleteWithReason(ctx.Guild.ID, member.ID, reason)
-
-		if err != nil {
-			msg, _ := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot kick this user!")
-			DeleteMessageWithTime(ctx, msg.ID, 7500)
-			break
-		}
-
 		// Target username
 		target := member.Username + "#" + member.Discriminator
 
@@ -265,7 +252,7 @@ func Kick(ctx Context) {
 
 		// Exits the loop if the user has DMs blocked
 		if err != nil {
-			break
+			log.Println(err)
 		}
 
 		// Sends a DM to the user with the kick information if the user can accept DMs
@@ -274,15 +261,22 @@ func Kick(ctx Context) {
 
 			if err != nil {
 				log.Println(err)
-				break
 			}
 		} else {
 			_, err = ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been kicked by `%s` without a reason.", ctx.Event.Message.Author.Username+"#"+ctx.Event.Message.Author.Discriminator))
 
 			if err != nil {
 				log.Println(err)
-				break
 			}
+		}
+
+		// Kicks the guild member with given reason
+		err = ctx.Session.GuildMemberDeleteWithReason(ctx.Guild.ID, member.ID, reason)
+
+		if err != nil {
+			msg, _ := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot kick this user!")
+			DeleteMessageWithTime(ctx, msg.ID, 7500)
+			break
 		}
 	}
 }
@@ -330,15 +324,6 @@ func Ban(ctx Context) {
 			return
 		}
 
-		// Bans the guild member with given reason, deletes 0 messages
-		err = ctx.Session.GuildBanCreateWithReason(ctx.Guild.ID, member.ID, reason, 0)
-
-		if err != nil {
-			msg, _ := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot ban this user!")
-			DeleteMessageWithTime(ctx, msg.ID, 7500)
-			break
-		}
-
 		// Target username
 		target := member.Username + "#" + member.Discriminator
 
@@ -356,7 +341,7 @@ func Ban(ctx Context) {
 
 		// Exits the loop if the user has DMs blocked
 		if err != nil {
-			break
+			log.Println(err)
 		}
 
 		// Sends a DM to the user with the ban information if the user can accept DMs
@@ -365,7 +350,6 @@ func Ban(ctx Context) {
 
 			if err != nil {
 				log.Println(err)
-				break
 			}
 		} else {
 			_, err = ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been banned by `%s` without a reason.", author))
@@ -374,6 +358,15 @@ func Ban(ctx Context) {
 				log.Println(err)
 				break
 			}
+		}
+
+		// Bans the guild member with given reason, deletes 0 messages
+		err = ctx.Session.GuildBanCreateWithReason(ctx.Guild.ID, member.ID, reason, 0)
+
+		if err != nil {
+			msg, _ := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot ban this user!")
+			DeleteMessageWithTime(ctx, msg.ID, 7500)
+			break
 		}
 	}
 }
@@ -475,7 +468,16 @@ func Check(ctx Context) {
 
 		for _, member := range members {
 			for _, usr := range g.GuildUser {
-				if usr.Member.User.ID == member.ID {
+				if usr.User.ID == member.ID {
+
+					if len(usr.Warnings) == 0 {
+						msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "No warnings found!")
+						if err != nil {
+							log.Println(err)
+						}
+						DeleteMessageWithTime(ctx, msg.ID, 5000)
+						return
+					}
 
 					embed := &discordgo.MessageEmbed{
 						Title: fmt.Sprintf("Warning Stats [%d]", len(usr.Warnings)),
@@ -508,6 +510,15 @@ func Check(ctx Context) {
 			for _, usr := range g.GuildUser {
 				if usr.User.ID == member.ID {
 
+					if len(usr.Warnings) == 0 {
+						msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "No kicks found!")
+						if err != nil {
+							log.Println(err)
+						}
+						DeleteMessageWithTime(ctx, msg.ID, 5000)
+						return
+					}
+
 					embed := &discordgo.MessageEmbed{
 						Title: fmt.Sprintf("Kick Stats [%d]", len(usr.Kicks)),
 						Color: kickColor,
@@ -538,6 +549,15 @@ func Check(ctx Context) {
 		for _, member := range members {
 			for _, usr := range g.GuildUser {
 				if usr.User.ID == member.ID {
+
+					if len(usr.Warnings) == 0 {
+						msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "No bans found!")
+						if err != nil {
+							log.Println(err)
+						}
+						DeleteMessageWithTime(ctx, msg.ID, 5000)
+						return
+					}
 
 					embed := &discordgo.MessageEmbed{
 						Title: fmt.Sprintf("Ban Stats [%d]", len(usr.Bans)),
@@ -573,7 +593,7 @@ func Check(ctx Context) {
 					embed := &discordgo.MessageEmbed{
 						Title:       fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
 						Color:       RandomInt(0, 16777215),
-						Description: fmt.Sprintf("Run `%scheck <@member|ID|Name> [warnings|mutes|kicks|bans]` for a complete list of information.", g.GuildPrefix),
+						Description: fmt.Sprintf("Run `%scheck <@member|ID|Name#xxxx> [warnings|mutes|kicks|bans|usernames|nicknames]` for a complete list of information.", g.GuildPrefix),
 						Thumbnail: &discordgo.MessageEmbedThumbnail{
 							URL:    member.AvatarURL("2048"),
 							Width:  2048,
@@ -598,6 +618,16 @@ func Check(ctx Context) {
 							&discordgo.MessageEmbedField{
 								Name:   fmt.Sprintf("❯ Total Bans"),
 								Value:  fmt.Sprintf("%d", len(usr.Bans)),
+								Inline: false,
+							},
+							&discordgo.MessageEmbedField{
+								Name:   fmt.Sprintf("❯ Total Usernames"),
+								Value:  fmt.Sprintf("%d", len(usr.PreviousUsernames)),
+								Inline: false,
+							},
+							&discordgo.MessageEmbedField{
+								Name:   fmt.Sprintf("❯ Total Nicknames"),
+								Value:  fmt.Sprintf("%d", len(usr.PreviousNicknames)),
 								Inline: false,
 							},
 						},

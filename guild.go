@@ -78,19 +78,31 @@ func Settings(ctx Context) {
 		gc = g.WelcomeChannel.Name
 	}
 
+	dc := " "
+	if g.MessageDeleteChannel != nil {
+		dc = g.MessageDeleteChannel.Name
+	}
+
+	ec := " "
+	if g.MessageEditChannel != nil {
+		dc = g.MessageEditChannel.Name
+	}
+
 	str := fmt.Sprintf(
 		"== %s Configuration ==\n\n"+
-			"Guild Prefix          ::   %s\n"+
-			"Blacklisted Channel   ::   %s\n"+
-			"Blacklisted Members   ::   %s\n"+
-			"Welcome Message       ::   %s\n"+
-			"Welcome Channel       ::   %s\n"+
-			"Goodbye Message       ::   %s\n"+
-			"Goodbye Channel       ::   %s\n"+
-			"Muted Role            ::   %s\n"+
-			"Auto Roles            ::   %d",
+			"Guild Prefix             ::   %s\n"+
+			"Blacklisted Channel      ::   %s\n"+
+			"Blacklisted Members      ::   %s\n"+
+			"Welcome Message          ::   %s\n"+
+			"Welcome Channel          ::   %s\n"+
+			"Goodbye Message          ::   %s\n"+
+			"Goodbye Channel          ::   %s\n"+
+			"Message Deleted Channel  ::   %s\n"+
+			"Message Edited Channel   ::   %s\n"+
+			"Muted Role               ::   %s\n"+
+			"Auto Roles               ::   %d",
 		g.Guild.Name, g.GuildPrefix, strings.Join(blc, ", "), strings.Join(blu, ", "),
-		g.WelcomeMessage, wc, g.GoodbyeMessage, gc, " ", strings.Join(ar, ", "))
+		g.WelcomeMessage, wc, g.GoodbyeMessage, gc, dc, ec, " ", strings.Join(ar, ", "))
 
 	ctx.Session.ChannelMessageSend(ctx.Channel.ID, FormatString(str, "asciidoc"))
 }
@@ -178,6 +190,26 @@ func Set(ctx Context) {
 		}
 
 		g.GoodbyeChannel = channels[0]
+	case "MESSAGE DELETED":
+		fallthrough
+	case "MESSAGE DELETED CHANNEL":
+		channels := FetchMessageContentChannels(ctx, val)
+
+		if len(channels) == 0 {
+			return
+		}
+
+		g.MessageDeleteChannel = channels[0]
+	case "MESSAGE EDITED":
+		fallthrough
+	case "MESSAGE EDITED CHANNEL":
+		channels := FetchMessageContentChannels(ctx, val)
+
+		if len(channels) == 0 {
+			return
+		}
+
+		g.MessageEditChannel = channels[0]
 	case "DISABLED":
 		fallthrough
 	case "DISABLED COMMANDS":

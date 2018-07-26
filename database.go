@@ -186,7 +186,7 @@ func RegisterNewUser(ctx Context, user *discordgo.User) GuildUser {
 	return GuildUser{
 		User:              user,
 		Age:               age.Format("01/02/06 03:04:05 PM MST"),
-		PreviousUsernames: []string{},
+		PreviousUsernames: []string{user.Username + "#" + user.Discriminator},
 		PreviousNicknames: []string{},
 		Roles:             []*discordgo.Role{},
 		Warnings:          []Warnings{},
@@ -399,7 +399,7 @@ func FormatWarning(warnings []Warnings) string {
 			"**Author**:\t%s\n"+
 				"**Channel**:  %s\n"+
 				"**Time**:\t\t%s\n"+
-				"**Reason**:\t%s\n\n",
+				"**Reason**:   %s\n\n",
 			avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
 	}
 
@@ -419,7 +419,7 @@ func FormatKick(kicks []Kicks) string {
 			"**Author**:\t%s\n"+
 				"**Channel**:  %s\n"+
 				"**Time**:\t\t%s\n"+
-				"**Reason**:\t%s\n\n",
+				"**Reason**:   %s\n\n",
 			avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
 	}
 
@@ -439,7 +439,7 @@ func FormatBan(bans []Bans) string {
 			"**Author**:\t%s\n"+
 				"**Channel**:  %s\n"+
 				"**Time**:\t\t%s\n"+
-				"**Reason**:\t%s\n\n",
+				"**Reason**:   %s\n\n",
 			avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
 	}
 

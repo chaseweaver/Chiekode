@@ -5,8 +5,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/tkanos/gonfig"
 )
 
@@ -23,7 +25,12 @@ var err = gonfig.GetConf("config.json", &conf)
 var pool = DialNewPool("tcp", ":6379")
 var p = pool.Get()
 
+// Create a cache with a default expiration time of 15 minutes, and which
+// purges expired items every 20 minutes
+var c = cache.New(15*time.Minute, 20*time.Minute)
+
 func main() {
+
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + conf.BotToken)
 	if err != nil {
@@ -46,6 +53,15 @@ func main() {
 	// Register the GuildMemberRemove for saying goodbye to members
 	dg.AddHandler(GuildMemberRemove)
 
+	// Register the MessageDelete for logging deleted messages
+	dg.AddHandler(MessageDelete)
+
+	// Register the MessageUpdate for logging edited messages
+	dg.AddHandler(MessageUpdate)
+
+	// Register the GuildMemberUpdate for tracking username and nickname changes
+	dg.AddHandler(GuildMemberUpdate)
+
 	// Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
 	if err != nil {
@@ -59,7 +75,9 @@ func main() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 
-	// Cleanly close down the Discord session.
+	// Cleanly close down the redis session.
 	p.Close()
+
+	// Cleanly close down the Discord session.
 	dg.Close()
 }

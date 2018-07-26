@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"math/rand"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -18,6 +19,8 @@ var (
 	muteColor    = 40447
 	kickColor    = 54527
 	banColor     = 16711684
+	deleteColor  = 4378356
+	editColor    = 4387980
 )
 
 /**
@@ -158,6 +161,24 @@ func LogCommands(ctx Context) {
 			ctx.Event.Author.Username+"#"+ctx.Event.Author.Discriminator,
 			ctx.Event.Author.ID, ctx.Channel.ID, ctx.Name, ctx.Args)
 	}
+}
+
+// SliceExists :
+// Checks if an element exists within a slice
+func SliceExists(slice interface{}, item interface{}) bool {
+	s := reflect.ValueOf(slice)
+
+	if s.Kind() != reflect.Slice {
+		panic("SliceExists() given a non-slice type")
+	}
+
+	for i := 0; i < s.Len(); i++ {
+		if s.Index(i).Interface() == item {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Contains :

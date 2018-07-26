@@ -99,7 +99,7 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Splits command arguments
 	tmp := strings.TrimPrefix(m.Content, prefix)
 
-	// Returns all Members, Channels, and Roles by Mention, ID, and Name, and removes them from the string
+	// Splits the arguments by the deliminator
 	ctx.Args = strings.Split(tmp, ctx.Command.ArgsDelim)[1:]
 
 	// Checks if the config for the command passes all checks and is part of a text channel in a guild
@@ -418,6 +418,85 @@ func MessageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) {
 			},
 			Timestamp: time.Now().Format(time.RFC3339),
 		})
+	}
+
+}
+
+// GuildMemberUpdate :
+// Logs changes to guild members and saves them to the database
+func GuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
+
+	// Fetch Guild information from redis database
+	data, err := redis.Bytes(p.Do("GET", m.GuildID))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var g Guild
+	err = json.Unmarshal(data, &g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Get guild from user ID
+	guild, err := s.Guild(m.GuildID)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// Search the database to see if the user already exists
+	found := false
+	for v := range g.GuildUser {
+		if g.GuildUser[v].User.ID == m.User.ID {
+			found = true
+
+			// Add updated nicknames to database
+			if !SliceExists(g.GuildUser[v].PreviousNicknames, m.Nick) {
+				g.GuildUser[v].PreviousNicknames = append(g.GuildUser[v].PreviousNicknames, m.Nick)
+			}
+
+			// Add updated usernames to database
+			if !SliceExists(g.GuildUser[v].PreviousUsernames, m.User.Username+"#"+m.User.Discriminator) {
+				g.GuildUser[v].PreviousNicknames = append(g.GuildUser[v].PreviousUsernames, m.User.Username+"#"+m.User.Discriminator)
+			}
+
+		}
+	}
+
+	// Register the new user in the guild database
+	if found != true {
+		nu := RegisterNewUser(Context{
+			Session: s,
+			Guild:   guild,
+		}, m.User)
+
+		// Add updated nicknames to database
+		if !SliceExists(nu.PreviousNicknames, m.Nick) {
+			nu.PreviousNicknames = append(nu.PreviousNicknames, m.Nick)
+		}
+
+		// Add updated usernames to database
+		if !SliceExists(nu.PreviousUsernames, m.User.Username+"#"+m.User.Discriminator) {
+			nu.PreviousNicknames = append(nu.PreviousUsernames, m.User.Username+"#"+m.User.Discriminator)
+		}
+
+		g.GuildUser = append(g.GuildUser, nu)
+	}
+
+	serialized, err := json.Marshal(g)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	_, err = p.Do("SET", m.GuildID, serialized)
+	if err != nil {
+		log.Println(err)
 	}
 
 }
