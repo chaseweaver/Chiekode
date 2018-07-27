@@ -38,17 +38,17 @@ type (
 
 	// GuildUser information
 	GuildUser struct {
-		User              *discordgo.User
-		Member            *discordgo.Member
-		Age               string
-		JoinedAt          string
-		PreviousUsernames []string
-		PreviousNicknames []string
-		Roles             []*discordgo.Role
-		Warnings          []Warnings
-		Kicks             []Kicks
-		Bans              []Bans
-		Mutes             []Mutes
+		User      *discordgo.User
+		Member    *discordgo.Member
+		Age       string
+		JoinedAt  string
+		Usernames []Usernames
+		Nicknames []Nicknames
+		Roles     []*discordgo.Role
+		Warnings  []Warnings
+		Kicks     []Kicks
+		Bans      []Bans
+		Mutes     []Mutes
 	}
 
 	// Warnings information for a user
@@ -86,6 +86,19 @@ type (
 		Reason     string
 		Time       time.Time
 		Length     time.Duration
+	}
+
+	// Usernames of user
+	Usernames struct {
+		Username      string
+		Discriminator string
+		Time          time.Time
+	}
+
+	// Nicknames of user
+	Nicknames struct {
+		Nickname string
+		Time     time.Time
 	}
 )
 
@@ -151,10 +164,12 @@ func RegisterNewGuild(guild *discordgo.Guild) (interface{}, error) {
 
 	// Initialize guild prefix with configuration default
 	g := &Guild{
-		Guild:          guild,
-		GuildPrefix:    conf.Prefix,
-		WelcomeMessage: "Welcome $MEMBER_MENTION$ to $GUILD_NAME$! Enjoy your stay.",
-		GoodbyeMessage: "Goodbye, `$MEMBER_NAME$`!",
+		Guild:               guild,
+		GuildPrefix:         conf.Prefix,
+		WelcomeMessage:      "Welcome $MEMBER_MENTION$ to $GUILD_NAME$! Enjoy your stay.",
+		GoodbyeMessage:      "Goodbye, `$MEMBER_NAME$`!",
+		MemberAddMessage:    "✔️ | `$MEMBER_NAME&` (ID: $MEMBER_ID$ | Age: $MEMBER_AGE$) has joinied the guild.",
+		MemberRemoveMessage: "❌ | `$MEMBER_NAME&` (ID: $MEMBER_ID$ | Age: $MEMBER_AGE$ | Joined At: $MEMBER_JOINED$) has left the guild.",
 	}
 
 	serialized, err := json.Marshal(g)
@@ -183,18 +198,27 @@ func RegisterNewUser(ctx Context, user *discordgo.User) GuildUser {
 		log.Println(err)
 	}
 
-	return GuildUser{
-		User:              user,
-		Age:               age.Format("01/02/06 03:04:05 PM MST"),
-		PreviousUsernames: []string{user.Username + "#" + user.Discriminator},
-		PreviousNicknames: []string{},
-		Roles:             []*discordgo.Role{},
-		Warnings:          []Warnings{},
-		Kicks:             []Kicks{},
-		Bans:              []Bans{},
-		Mutes:             []Mutes{},
+	// Create a new GuildUser
+	nu := GuildUser{
+		User:      user,
+		Age:       age.Format("01/02/06 03:04:05 PM MST"),
+		Usernames: []Usernames{},
+		Nicknames: []Nicknames{},
+		Roles:     []*discordgo.Role{},
+		Warnings:  []Warnings{},
+		Kicks:     []Kicks{},
+		Bans:      []Bans{},
+		Mutes:     []Mutes{},
 	}
 
+	// Add the current username to the GuildUser
+	nu.Usernames = append(nu.Usernames, Usernames{
+		Username:      user.Username,
+		Discriminator: user.Discriminator,
+		Time:          time.Now(),
+	})
+
+	return nu
 }
 
 // LogWarning :
@@ -386,9 +410,9 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 	}
 }
 
-// FormatWarning :
+// FormatWarnings :
 // Returns a string of warnings.
-func FormatWarning(warnings []Warnings) string {
+func FormatWarnings(warnings []Warnings) string {
 
 	str := "\n"
 	for _, v := range warnings {
@@ -406,9 +430,9 @@ func FormatWarning(warnings []Warnings) string {
 	return str
 }
 
-// FormatKick :
+// FormatKicks :
 // Returns a string of kicks.
-func FormatKick(kicks []Kicks) string {
+func FormatKicks(kicks []Kicks) string {
 
 	str := "\n"
 	for _, v := range kicks {
@@ -426,9 +450,9 @@ func FormatKick(kicks []Kicks) string {
 	return str
 }
 
-// FormatBan :
+// FormatBans :
 // Returns a string of bans.
-func FormatBan(bans []Bans) string {
+func FormatBans(bans []Bans) string {
 
 	str := "\n"
 	for _, v := range bans {
@@ -441,6 +465,36 @@ func FormatBan(bans []Bans) string {
 				"**Time**:\t\t%s\n"+
 				"**Reason**:   %s\n\n",
 			avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
+	}
+
+	return str
+}
+
+// FormatUsernames :
+// Returns a string of usernames.
+func FormatUsernames(usernames []Usernames) string {
+
+	str := "\n"
+	for _, v := range usernames {
+		str = str + fmt.Sprintf(
+			"**Username**:\t%s\n"+
+				"**Time**:\t\t%s\n\n",
+			v.Username+"#"+v.Discriminator, v.Time.Format("01/02/06 03:04:05 PM MST"))
+	}
+
+	return str
+}
+
+// FormatNicknames :
+// Returns a string of nicknames.
+func FormatNicknames(nicknames []Nicknames) string {
+
+	str := "\n"
+	for _, v := range nicknames {
+		str = str + fmt.Sprintf(
+			"**Nickname**:\t%s\n"+
+				"**Time**:\t\t%s\n\n",
+			v.Nickname, v.Time.Format("01/02/06 03:04:05 PM MST"))
 	}
 
 	return str

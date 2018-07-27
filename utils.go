@@ -406,3 +406,10 @@ func FetchUsersChannelsRoles(ctx Context, msg string) ([]*discordgo.User, []*dis
 
 	return users, channels, roles, strings.TrimSpace(str)
 }
+
+// SetTimeout :
+// Delays execution of a func (non-blocking) for a given time
+func setTimeout(f func(), milliseconds int) {
+	timeout := time.Duration(milliseconds) * time.Millisecond
+	time.AfterFunc(timeout, f)
+}
