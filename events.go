@@ -467,13 +467,26 @@ func GuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
 
 	// Append Nickname changes
 	if user.Nicknames == nil || len(user.Nicknames) == 0 {
+		nick := m.Nick
+
+		if nick == "" {
+			nick = "RESET NICKNAME"
+		}
+
 		user.Nicknames = append(user.Nicknames, Nicknames{
-			Nickname: m.Nick,
+			Nickname: nick,
 			Time:     time.Now(),
 		})
 	} else if user.Nicknames[index].Nickname != m.Nick {
+
+		nick := m.Nick
+
+		if nick == "" {
+			nick = "RESET NICKNAME"
+		}
+
 		user.Nicknames = append(user.Nicknames, Nicknames{
-			Nickname: m.Nick,
+			Nickname: nick,
 			Time:     time.Now(),
 		})
 	}

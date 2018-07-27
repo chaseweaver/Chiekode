@@ -118,7 +118,7 @@ func Settings(ctx Context) {
 			"Message Deleted Channel  ::   %s\n"+
 			"Message Edited Channel   ::   %s\n"+
 			"Muted Role               ::   %s\n"+
-			"Auto Roles               ::   %d",
+			"Auto Roles               ::   %s",
 		g.Guild.Name, g.GuildPrefix, strings.Join(blc, ", "), strings.Join(blu, ", "),
 		g.WelcomeMessage, wc, g.GoodbyeMessage, gc, dc, ec, " ", strings.Join(ar, ", "))
 
@@ -280,8 +280,8 @@ func Set(ctx Context) {
 // Resets the guild to initial settings
 func ResetGuildSettings(ctx Context) {
 
-	// Reinitialize guild prefix with configuration default
-	g := &Guild{
+	// Reinitialize guild prefix with configuration defaults
+	serialized, err := json.Marshal(&Guild{
 		Guild:               ctx.Guild,
 		GuildPrefix:         conf.Prefix,
 		WelcomeMessage:      "Welcome $MEMBER_MENTION$ to $GUILD_NAME$! Enjoy your stay.",
@@ -289,9 +289,7 @@ func ResetGuildSettings(ctx Context) {
 		MemberAddMessage:    "✅ | `$MEMBER_NAME&` (ID: $MEMBER_ID$ | Age: $MEMBER_AGE$) has joinied the guild.",
 		MemberRemoveMessage: "❌ | `$MEMBER_NAME&` (ID: $MEMBER_ID$ | Age: $MEMBER_AGE$ | Joined At: $MEMBER_JOINED$) has left the guild.",
 		GuildUser:           make(map[string]GuildUser),
-	}
-
-	serialized, err := json.Marshal(g)
+	})
 
 	if err != nil {
 		log.Println(err)
