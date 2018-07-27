@@ -43,6 +43,22 @@ func init() {
 		Usage:           []string{"<Guild Setting>", "<value>"},
 		Description:     "Sets guild configurations.",
 	})
+
+	RegisterNewCommand(Command{
+		Name:            "resetguildsettings",
+		Func:            ResetGuildSettings,
+		Enabled:         true,
+		NSFWOnly:        false,
+		IgnoreSelf:      true,
+		IgnoreBots:      true,
+		Cooldown:        0,
+		RunIn:           []string{"Text"},
+		Aliases:         []string{},
+		UserPermissions: []string{"Bot Owner", "Administrator"},
+		ArgsDelim:       "",
+		Usage:           []string{},
+		Description:     "Resets guild configurations.",
+	})
 }
 
 // Settings lists database guild configurations
@@ -258,4 +274,35 @@ func Set(ctx Context) {
 		return
 	}
 
+}
+
+// ResetGuildSettings :
+// Resets the guild to initial settings
+func ResetGuildSettings(ctx Context) {
+
+	// Reinitialize guild prefix with configuration default
+	g := &Guild{
+		Guild:               ctx.Guild,
+		GuildPrefix:         conf.Prefix,
+		WelcomeMessage:      "Welcome $MEMBER_MENTION$ to $GUILD_NAME$! Enjoy your stay.",
+		GoodbyeMessage:      "Goodbye, `$MEMBER_NAME$`!",
+		MemberAddMessage:    "✅ | `$MEMBER_NAME&` (ID: $MEMBER_ID$ | Age: $MEMBER_AGE$) has joinied the guild.",
+		MemberRemoveMessage: "❌ | `$MEMBER_NAME&` (ID: $MEMBER_ID$ | Age: $MEMBER_AGE$ | Joined At: $MEMBER_JOINED$) has left the guild.",
+		GuildUser:           make(map[string]GuildUser),
+	}
+
+	serialized, err := json.Marshal(g)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	_, err = p.Do("SET", ctx.Guild.ID, serialized)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	ctx.Session.ChannelMessageSend(ctx.Channel.ID, "✅ | Guild settings have been reset.")
 }
