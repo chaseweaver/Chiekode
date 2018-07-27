@@ -445,7 +445,13 @@ func GuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
 	}
 
 	// Append Username changes
-	if user.Usernames[index].Username != m.User.Username || user.Usernames[index].Discriminator != m.User.Discriminator {
+	if user.Usernames == nil || len(user.Usernames) == 0 {
+		user.Usernames = append(user.Usernames, Usernames{
+			Username:      m.User.Username,
+			Discriminator: m.User.Discriminator,
+			Time:          time.Now(),
+		})
+	} else if user.Usernames[index].Username != m.User.Username || user.Usernames[index].Discriminator != m.User.Discriminator {
 		user.Usernames = append(user.Usernames, Usernames{
 			Username:      m.User.Username,
 			Discriminator: m.User.Discriminator,
@@ -453,8 +459,19 @@ func GuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
 		})
 	}
 
+	// Compensate for index of 0
+	index = 0
+	if len(user.Nicknames) > 0 {
+		index = len(user.Nicknames) - 1
+	}
+
 	// Append Nickname changes
-	if user.Nicknames[index].Nickname != m.Nick {
+	if user.Nicknames == nil || len(user.Nicknames) == 0 {
+		user.Nicknames = append(user.Nicknames, Nicknames{
+			Nickname: m.Nick,
+			Time:     time.Now(),
+		})
+	} else if user.Nicknames[index].Nickname != m.Nick {
 		user.Nicknames = append(user.Nicknames, Nicknames{
 			Nickname: m.Nick,
 			Time:     time.Now(),
