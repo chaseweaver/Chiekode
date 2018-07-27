@@ -26,6 +26,7 @@ func init() {
 		NSFWOnly:        false,
 		IgnoreSelf:      true,
 		IgnoreBots:      true,
+		Cooldown:        0,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Kick Members"},
@@ -41,6 +42,7 @@ func init() {
 		NSFWOnly:        false,
 		IgnoreSelf:      true,
 		IgnoreBots:      true,
+		Cooldown:        0,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Kick Members"},
@@ -56,6 +58,7 @@ func init() {
 		NSFWOnly:        false,
 		IgnoreSelf:      true,
 		IgnoreBots:      true,
+		Cooldown:        0,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Ban Members"},
@@ -71,6 +74,7 @@ func init() {
 		NSFWOnly:        false,
 		IgnoreSelf:      true,
 		IgnoreBots:      true,
+		Cooldown:        0,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{"lockdown"},
 		UserPermissions: []string{"Bot Owner", "Manage Channels"},
@@ -86,6 +90,7 @@ func init() {
 		NSFWOnly:        false,
 		IgnoreSelf:      true,
 		IgnoreBots:      true,
+		Cooldown:        0,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Manage Channels"},
@@ -101,6 +106,7 @@ func init() {
 		NSFWOnly:        false,
 		IgnoreSelf:      true,
 		IgnoreBots:      true,
+		Cooldown:        0,
 		RunIn:           []string{"Text"},
 		Aliases:         []string{},
 		UserPermissions: []string{"Bot Owner", "Kick Members"},
@@ -393,7 +399,7 @@ func Lock(ctx Context) {
 		log.Println(err)
 	}
 
-	_, err = ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("This channel is now under lockdown!"))
+	_, err = ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("🔒 | This channel is now under lockdown!"))
 
 	if err != nil {
 		log.Println(err)
@@ -422,11 +428,17 @@ func Unlock(ctx Context) {
 		log.Println(err)
 	}
 
-	_, err = ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("This channel is no longer under lockdown!"))
+	_, err = ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("🔓 | This channel is no longer under lockdown!"))
 
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+// Mute :
+// Adds the guild's "mute" role to a member for a set time (if given)
+func Mute(ctx Context) {
+
 }
 
 // Check :

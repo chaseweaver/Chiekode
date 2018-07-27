@@ -56,6 +56,7 @@ Example and templates are shown below.
             NSFWOnly:        false,
             IgnoreSelf:      true,
             IgnoreBots:      true,
+            Cooldown:        30,
             RunIn:           []string{"Text", "DM"},
             Aliases:         []string{"nameone", "nametwo"},
             UserPermissions: []string{"Kick Members"},
@@ -98,6 +99,7 @@ This is to be passed in for each func call:
 | NSFWOnly        | Whether or not the command is only available in NSFW-marked channels | [bool](https://golang.org/pkg/builtin/#bool)           |
 | IgnoreSelf      | Whether or not the bot will ignore itself                            | [bool](https://golang.org/pkg/builtin/#bool)           |
 | IgnoreBots      | Whether or not the bot will ignore other bots                        | [bool](https://golang.org/pkg/builtin/#bool)           |
+| Cooldown        | Time the command can be ran again by the same user                   | [int](https://golang.org/pkg/builtin/#int)           |
 | RunIn           | Channel type the command can be ran in (DM, Text)                    | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | Aliases         | Other names the command will execute under                           | [\[\]string{}](https://golang.org/pkg/builtin/#string) |
 | UserPermissions | Permissions the user needs in order for the command to execute       | [\[\]string{}](https://golang.org/pkg/builtin/#string) |

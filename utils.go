@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/gomodule/redigo/redis"
 )
 
 var (
@@ -409,7 +411,39 @@ func FetchUsersChannelsRoles(ctx Context, msg string) ([]*discordgo.User, []*dis
 
 // SetTimeout :
 // Delays execution of a func (non-blocking) for a given time
-func setTimeout(f func(), milliseconds int) {
+func SetTimeout(f func(), milliseconds int) {
 	timeout := time.Duration(milliseconds) * time.Millisecond
 	time.AfterFunc(timeout, f)
+}
+
+// UnmuteMember :
+// Removes the "mute" role from a user
+func UnmuteMember(ctx Context, memberID string) {
+
+	// Fetch Guild information from redis database
+	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var g Guild
+	err = json.Unmarshal(data, &g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	if g.MutedRole == nil {
+		return
+	}
+
+	// Find "mute" role in database and remove it from the user
+	role := g.MutedRole
+	err = ctx.Session.GuildMemberRoleRemove(ctx.Guild.ID, memberID, role.ID)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }

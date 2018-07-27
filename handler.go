@@ -36,7 +36,7 @@ type (
 		NSFWOnly        bool
 		IgnoreSelf      bool
 		IgnoreBots      bool
-		Locked          bool
+		Cooldown        int
 		RunIn           []string
 		Aliases         []string
 		UserPermissions []string
@@ -47,6 +47,12 @@ type (
 )
 
 var commands = make(map[string]Command)
+
+// RemoveIndex :
+// Removes an elemet from an int array
+func RemoveIndex(s []int, index int) []int {
+	return append(s[:index], s[index+1:]...)
+}
 
 // IsEmpty ::
 // Simple way to check if a Command is empty
@@ -70,11 +76,6 @@ func CommandIsValid(ctx Context) bool {
 
 	// IgnoreBots
 	if ctx.Event.Author.Bot && ctx.Command.IgnoreBots && ctx.Event.Author.ID != ctx.Session.State.User.ID {
-		return false
-	}
-
-	// Locked
-	if ctx.Command.Locked && ctx.Event.Author.ID != conf.OwnerID {
 		return false
 	}
 
