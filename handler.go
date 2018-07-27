@@ -44,9 +44,16 @@ type (
 		Usage           []string
 		Description     string
 	}
+
+	// Cooldown data per user for commands
+	Cooldown struct {
+		Name string
+		Time int
+	}
 )
 
 var commands = make(map[string]Command)
+var cooldown = make(map[string][]Cooldown)
 
 // RemoveIndex :
 // Removes an elemet from an int array

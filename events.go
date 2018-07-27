@@ -195,20 +195,10 @@ func GuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	// Search the database to see if the user already exists
-	found := false
-	for _, v := range g.GuildUser {
-		if v.User.ID == m.User.ID {
-			found = true
-		}
-	}
-
-	// Register the new user in the guild database
-	if found != true {
-		RegisterNewUser(Context{
-			Session: s,
-			Guild:   guild,
-		}, m.User)
+	// Check for User ID in Guild map, register user if missing
+	if _, ok := g.GuildUser[m.User.ID]; !ok {
+		user := RegisterNewUser(m.User)
+		g.GuildUser[m.User.ID] = user
 	}
 
 	// Send a formatted message to the welcome channel
@@ -440,83 +430,38 @@ func GuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
 		log.Println(err)
 	}
 
-	// Get guild from user ID
-	guild, err := s.Guild(m.GuildID)
-
-	if err != nil {
-		log.Println(err)
-		return
+	// Check for User ID in Guild map, register user if missing
+	user := RegisterNewUser(m.User)
+	if _, ok := g.GuildUser[m.User.ID]; ok {
+		user = g.GuildUser[m.User.ID]
 	}
 
-	// Search for the user in the databse, then append changes if found
-	found := false
-	for u := range g.GuildUser {
-		if g.GuildUser[u].User.ID == m.User.ID {
+	// Get the GuildUser struct
+	index := 0
 
-			found = true
-
-			if len(g.GuildUser[u].Usernames) < 1 {
-				g.GuildUser[u].Usernames = append(g.GuildUser[u].Usernames, Usernames{
-					Username:      m.User.Username,
-					Discriminator: m.User.Discriminator,
-					Time:          time.Now(),
-				})
-			} else if g.GuildUser[u].Usernames[len(g.GuildUser[u].Usernames)-1].Username != m.User.Username || g.GuildUser[u].Usernames[len(g.GuildUser[u].Usernames)-1].Discriminator != m.User.Discriminator {
-				g.GuildUser[u].Usernames = append(g.GuildUser[u].Usernames, Usernames{
-					Username:      m.User.Username,
-					Discriminator: m.User.Discriminator,
-					Time:          time.Now(),
-				})
-			}
-
-			if len(g.GuildUser[u].Nicknames) == 0 {
-				g.GuildUser[u].Nicknames = append(g.GuildUser[u].Nicknames, Nicknames{
-					Nickname: m.Nick,
-					Time:     time.Now(),
-				})
-			} else if g.GuildUser[u].Nicknames[len(g.GuildUser[u].Nicknames)-1].Nickname != m.Nick {
-				g.GuildUser[u].Nicknames = append(g.GuildUser[u].Nicknames, Nicknames{
-					Nickname: m.Nick,
-					Time:     time.Now(),
-				})
-			}
-
-		}
+	// Compensate for index of 0
+	if len(user.Usernames) > 0 {
+		index = len(user.Usernames) - 1
 	}
 
-	// If no user is found in the database, regiser a new one and append the changes
-	if !found {
-
-		gu := RegisterNewUser(Context{Session: s, Guild: guild}, m.User)
-
-		if len(gu.Usernames) < 1 {
-			gu.Usernames = append(gu.Usernames, Usernames{
-				Username:      m.User.Username,
-				Discriminator: m.User.Discriminator,
-				Time:          time.Now(),
-			})
-		} else if gu.Usernames[len(gu.Usernames)-1].Username != m.User.Username || gu.Usernames[len(gu.Usernames)-1].Discriminator != m.User.Discriminator {
-			gu.Usernames = append(gu.Usernames, Usernames{
-				Username:      m.User.Username,
-				Discriminator: m.User.Discriminator,
-				Time:          time.Now(),
-			})
-		}
-
-		if len(gu.Nicknames) == 0 {
-			gu.Nicknames = append(gu.Nicknames, Nicknames{
-				Nickname: m.Nick,
-				Time:     time.Now(),
-			})
-		} else if gu.Nicknames[len(gu.Nicknames)-1].Nickname != m.Nick {
-			gu.Nicknames = append(gu.Nicknames, Nicknames{
-				Nickname: m.Nick,
-				Time:     time.Now(),
-			})
-		}
-
-		g.GuildUser = append(g.GuildUser, gu)
+	// Append Username changes
+	if user.Usernames[index].Username != m.User.Username || user.Usernames[index].Discriminator != m.User.Discriminator {
+		user.Usernames = append(user.Usernames, Usernames{
+			Username:      m.User.Username,
+			Discriminator: m.User.Discriminator,
+			Time:          time.Now(),
+		})
 	}
+
+	// Append Nickname changes
+	if user.Nicknames[index].Nickname != m.Nick {
+		user.Nicknames = append(user.Nicknames, Nicknames{
+			Nickname: m.Nick,
+			Time:     time.Now(),
+		})
+	}
+
+	g.GuildUser[m.User.ID] = user
 
 	serialized, err := json.Marshal(g)
 

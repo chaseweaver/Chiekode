@@ -28,7 +28,7 @@ type (
 		MemberRemoveChannel  *discordgo.Channel
 		MessageEditChannel   *discordgo.Channel
 		MessageDeleteChannel *discordgo.Channel
-		GuildUser            []GuildUser
+		GuildUser            map[string]GuildUser
 		BlacklistedUsers     []*discordgo.User
 		BlacklistedChannels  []*discordgo.Channel
 		AutoRole             []*discordgo.Role
@@ -168,8 +168,9 @@ func RegisterNewGuild(guild *discordgo.Guild) (interface{}, error) {
 		GuildPrefix:         conf.Prefix,
 		WelcomeMessage:      "Welcome $MEMBER_MENTION$ to $GUILD_NAME$! Enjoy your stay.",
 		GoodbyeMessage:      "Goodbye, `$MEMBER_NAME$`!",
-		MemberAddMessage:    "✔️ | `$MEMBER_NAME&` (ID: $MEMBER_ID$ | Age: $MEMBER_AGE$) has joinied the guild.",
+		MemberAddMessage:    "✅ | `$MEMBER_NAME&` (ID: $MEMBER_ID$ | Age: $MEMBER_AGE$) has joinied the guild.",
 		MemberRemoveMessage: "❌ | `$MEMBER_NAME&` (ID: $MEMBER_ID$ | Age: $MEMBER_AGE$ | Joined At: $MEMBER_JOINED$) has left the guild.",
+		GuildUser:           make(map[string]GuildUser),
 	}
 
 	serialized, err := json.Marshal(g)
@@ -189,7 +190,7 @@ func RegisterNewGuild(guild *discordgo.Guild) (interface{}, error) {
 
 // RegisterNewUser :
 // Creates a new guild user with user defaults.
-func RegisterNewUser(ctx Context, user *discordgo.User) GuildUser {
+func RegisterNewUser(user *discordgo.User) GuildUser {
 
 	// Fetch Account creation time
 	age, err := CreationTime(user.ID)
@@ -239,36 +240,30 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	found := false
+	if _, ok := g.GuildUser[mem.ID]; ok {
 
-	for u := range g.GuildUser {
-		if g.GuildUser[u].User.ID == mem.ID {
-			found = true
-		}
-	}
-
-	if found {
-		for u := range g.GuildUser {
-			if g.GuildUser[u].User.ID == mem.ID {
-				g.GuildUser[u].Warnings = append(g.GuildUser[u].Warnings, Warnings{
-					AuthorUser: ctx.Event.Author,
-					TargetUser: mem,
-					Channel:    ctx.Channel,
-					Reason:     reason,
-					Time:       time.Now(),
-				})
-			}
-		}
-	} else {
-		newUser := RegisterNewUser(ctx, mem)
-		newUser.Warnings = append(newUser.Warnings, Warnings{
+		user := g.GuildUser[mem.ID]
+		user.Warnings = append(user.Warnings, Warnings{
 			AuthorUser: ctx.Event.Author,
 			TargetUser: mem,
 			Channel:    ctx.Channel,
 			Reason:     reason,
 			Time:       time.Now(),
 		})
-		g.GuildUser = append(g.GuildUser, newUser)
+		g.GuildUser[mem.ID] = user
+
+	} else {
+
+		user := RegisterNewUser(mem)
+		user.Warnings = append(user.Warnings, Warnings{
+			AuthorUser: ctx.Event.Author,
+			TargetUser: mem,
+			Channel:    ctx.Channel,
+			Reason:     reason,
+			Time:       time.Now(),
+		})
+		g.GuildUser[mem.ID] = user
+
 	}
 
 	serialized, err := json.Marshal(g)
@@ -302,36 +297,30 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	found := false
+	if _, ok := g.GuildUser[mem.ID]; ok {
 
-	for u := range g.GuildUser {
-		if g.GuildUser[u].User.ID == mem.ID {
-			found = true
-		}
-	}
-
-	if found {
-		for u := range g.GuildUser {
-			if g.GuildUser[u].User.ID == mem.ID {
-				g.GuildUser[u].Kicks = append(g.GuildUser[u].Kicks, Kicks{
-					AuthorUser: ctx.Event.Author,
-					TargetUser: mem,
-					Channel:    ctx.Channel,
-					Reason:     reason,
-					Time:       time.Now(),
-				})
-			}
-		}
-	} else {
-		newUser := RegisterNewUser(ctx, mem)
-		newUser.Kicks = append(newUser.Kicks, Kicks{
+		user := g.GuildUser[mem.ID]
+		user.Kicks = append(user.Kicks, Kicks{
 			AuthorUser: ctx.Event.Author,
 			TargetUser: mem,
 			Channel:    ctx.Channel,
 			Reason:     reason,
 			Time:       time.Now(),
 		})
-		g.GuildUser = append(g.GuildUser, newUser)
+		g.GuildUser[mem.ID] = user
+
+	} else {
+
+		user := RegisterNewUser(mem)
+		user.Kicks = append(user.Kicks, Kicks{
+			AuthorUser: ctx.Event.Author,
+			TargetUser: mem,
+			Channel:    ctx.Channel,
+			Reason:     reason,
+			Time:       time.Now(),
+		})
+		g.GuildUser[mem.ID] = user
+
 	}
 
 	serialized, err := json.Marshal(g)
@@ -365,36 +354,30 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 		log.Println(err)
 	}
 
-	found := false
+	if _, ok := g.GuildUser[mem.ID]; ok {
 
-	for u := range g.GuildUser {
-		if g.GuildUser[u].User.ID == mem.ID {
-			found = true
-		}
-	}
-
-	if found {
-		for u := range g.GuildUser {
-			if g.GuildUser[u].User.ID == mem.ID {
-				g.GuildUser[u].Bans = append(g.GuildUser[u].Bans, Bans{
-					AuthorUser: ctx.Event.Author,
-					TargetUser: mem,
-					Channel:    ctx.Channel,
-					Reason:     reason,
-					Time:       time.Now(),
-				})
-			}
-		}
-	} else {
-		newUser := RegisterNewUser(ctx, mem)
-		newUser.Bans = append(newUser.Bans, Bans{
+		user := g.GuildUser[mem.ID]
+		user.Bans = append(user.Bans, Bans{
 			AuthorUser: ctx.Event.Author,
 			TargetUser: mem,
 			Channel:    ctx.Channel,
 			Reason:     reason,
 			Time:       time.Now(),
 		})
-		g.GuildUser = append(g.GuildUser, newUser)
+		g.GuildUser[mem.ID] = user
+
+	} else {
+
+		user := RegisterNewUser(mem)
+		user.Bans = append(user.Bans, Bans{
+			AuthorUser: ctx.Event.Author,
+			TargetUser: mem,
+			Channel:    ctx.Channel,
+			Reason:     reason,
+			Time:       time.Now(),
+		})
+		g.GuildUser[mem.ID] = user
+
 	}
 
 	serialized, err := json.Marshal(g)

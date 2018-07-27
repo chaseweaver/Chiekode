@@ -114,6 +114,22 @@ func init() {
 		Usage:           []string{"<@Member(s)|ID(s)|Name#xxxx(s)>", "[warnings|mutes|kicks|bans|nicknames|usernames]"},
 		Description:     "Checks the warnings, mutes, kicks, bans, nicknames, and usernames of a mentioned user.",
 	})
+
+	RegisterNewCommand(Command{
+		Name:            "clear",
+		Func:            Clear,
+		Enabled:         true,
+		NSFWOnly:        false,
+		IgnoreSelf:      true,
+		IgnoreBots:      true,
+		Cooldown:        0,
+		RunIn:           []string{"Text"},
+		Aliases:         []string{"reset"},
+		UserPermissions: []string{"Bot Owner", "Administrator", "Ban Members", "Kick Members"},
+		ArgsDelim:       " ",
+		Usage:           []string{"<@Member|ID|Name#xxxx> <warnings|mutes|kicks|bans|usernames|nicknames|all>"},
+		Description:     "Clears a guild member's recorded data.",
+	})
 }
 
 // Warn :
@@ -125,7 +141,7 @@ func Warn(ctx Context) {
 
 	// Returns if a user cannot be found in the message, deletes command message, then deletes delayed response
 	if len(members) == 0 {
-		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
+		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot find that user!")
 
 		if err != nil {
 			log.Println(err)
@@ -149,7 +165,7 @@ func Warn(ctx Context) {
 
 		// Prevent someone from warning the bot
 		if member.ID == ctx.Session.State.User.ID {
-			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I will not warn myself!")
+			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I will not warn myself!")
 
 			if err != nil {
 				log.Println(err)
@@ -207,7 +223,7 @@ func Kick(ctx Context) {
 
 	// Returns if a user cannot be found in the message, deletes command message, then deletes delayed response
 	if len(members) == 0 {
-		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
+		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot find that user!")
 
 		if err != nil {
 			log.Println(err)
@@ -231,7 +247,7 @@ func Kick(ctx Context) {
 
 		// Prevent someone from kicking the bot
 		if member.ID == ctx.Session.State.User.ID {
-			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I will not kick myself!")
+			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I will not kick myself!")
 
 			if err != nil {
 				log.Println(err)
@@ -280,7 +296,7 @@ func Kick(ctx Context) {
 		err = ctx.Session.GuildMemberDeleteWithReason(ctx.Guild.ID, member.ID, reason)
 
 		if err != nil {
-			msg, _ := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot kick this user!")
+			msg, _ := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot kick this user!")
 			DeleteMessageWithTime(ctx, msg.ID, 7500)
 			break
 		}
@@ -296,7 +312,7 @@ func Ban(ctx Context) {
 
 	// Returns if a user cannot be found in the message, deletes command message, then deletes delayed response
 	if len(members) == 0 {
-		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
+		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot find that user!")
 
 		if err != nil {
 			log.Println(err)
@@ -320,7 +336,7 @@ func Ban(ctx Context) {
 
 		// Prevent someone from banning the bot
 		if member.ID == ctx.Session.State.User.ID {
-			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I will not ban myself!")
+			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I will not ban myself!")
 
 			if err != nil {
 				log.Println(err)
@@ -370,7 +386,7 @@ func Ban(ctx Context) {
 		err = ctx.Session.GuildBanCreateWithReason(ctx.Guild.ID, member.ID, reason, 0)
 
 		if err != nil {
-			msg, _ := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot ban this user!")
+			msg, _ := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot ban this user!")
 			DeleteMessageWithTime(ctx, msg.ID, 7500)
 			break
 		}
@@ -455,7 +471,7 @@ func Check(ctx Context) {
 
 	// Returns if a user cannot be found in the message, deletes delayed response
 	if len(members) == 0 {
-		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "I cannot find that user!")
+		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot find that user!")
 
 		if err != nil {
 			log.Println(err)
@@ -478,62 +494,49 @@ func Check(ctx Context) {
 		log.Println(err)
 	}
 
-	found := false
-	for _, member := range members {
-		for _, usr := range g.GuildUser {
-			if usr.User.ID == member.ID {
-				found = true
-			}
-		}
-	}
-
-	// Returns if no database information is found on the user
-	if !found {
-		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I do not have any information on that user.")
-		return
-	}
-
 	switch checkType {
 	case "WARN":
 		fallthrough
 	case "WARNS":
+		fallthrough
+	case "WARNING":
+		fallthrough
+	case "WARNINGS":
 
 		for _, member := range members {
-			for _, usr := range g.GuildUser {
-				if usr.User.ID == member.ID {
+			if _, ok := g.GuildUser[member.ID]; ok {
 
-					if len(usr.Warnings) == 0 {
-						msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "No warnings found!")
-						if err != nil {
-							log.Println(err)
-						}
-						DeleteMessageWithTime(ctx, msg.ID, 5000)
-						return
-					}
-
-					embed := &discordgo.MessageEmbed{
-						Title: fmt.Sprintf("Warning Stats [%d]", len(usr.Warnings)),
-						Color: warningColor,
-						Author: &discordgo.MessageEmbedAuthor{
-							URL:     member.AvatarURL("2048"),
-							IconURL: member.AvatarURL("256"),
-							Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
-						},
-						Thumbnail: &discordgo.MessageEmbedThumbnail{
-							URL:    member.AvatarURL("2048"),
-							Width:  2048,
-							Height: 2048,
-						},
-						Description: FormatWarnings(usr.Warnings),
-						Timestamp:   time.Now().Format(time.RFC3339),
-					}
-					_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
-
+				if len(g.GuildUser[member.ID].Warnings) == 0 {
+					msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | No warnings found!")
 					if err != nil {
-						return
+						log.Println(err)
 					}
-
+					DeleteMessageWithTime(ctx, msg.ID, 5000)
+					return
 				}
+
+				embed := &discordgo.MessageEmbed{
+					Title: fmt.Sprintf("Warning Stats [%d]", len(g.GuildUser[member.ID].Warnings)),
+					Color: warningColor,
+					Author: &discordgo.MessageEmbedAuthor{
+						URL:     member.AvatarURL("2048"),
+						IconURL: member.AvatarURL("256"),
+						Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
+					},
+					Thumbnail: &discordgo.MessageEmbedThumbnail{
+						URL:    member.AvatarURL("2048"),
+						Width:  2048,
+						Height: 2048,
+					},
+					Description: FormatWarnings(g.GuildUser[member.ID].Warnings),
+					Timestamp:   time.Now().Format(time.RFC3339),
+				}
+				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+
+				if err != nil {
+					return
+				}
+
 			}
 		}
 
@@ -542,41 +545,39 @@ func Check(ctx Context) {
 	case "KICKS":
 
 		for _, member := range members {
-			for _, usr := range g.GuildUser {
-				if usr.User.ID == member.ID {
+			if _, ok := g.GuildUser[member.ID]; ok {
 
-					if len(usr.Warnings) == 0 {
-						msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "No kicks found!")
-						if err != nil {
-							log.Println(err)
-						}
-						DeleteMessageWithTime(ctx, msg.ID, 5000)
-						return
-					}
-
-					embed := &discordgo.MessageEmbed{
-						Title: fmt.Sprintf("Kick Stats [%d]", len(usr.Kicks)),
-						Color: kickColor,
-						Author: &discordgo.MessageEmbedAuthor{
-							URL:     member.AvatarURL("2048"),
-							IconURL: member.AvatarURL("256"),
-							Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
-						},
-						Thumbnail: &discordgo.MessageEmbedThumbnail{
-							URL:    member.AvatarURL("2048"),
-							Width:  2048,
-							Height: 2048,
-						},
-						Description: FormatKicks(usr.Kicks),
-						Timestamp:   time.Now().Format(time.RFC3339),
-					}
-					_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
-
+				if len(g.GuildUser[member.ID].Kicks) == 0 {
+					msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | No kicks found!")
 					if err != nil {
-						return
+						log.Println(err)
 					}
-
+					DeleteMessageWithTime(ctx, msg.ID, 5000)
+					return
 				}
+
+				embed := &discordgo.MessageEmbed{
+					Title: fmt.Sprintf("Kick Stats [%d]", len(g.GuildUser[member.ID].Kicks)),
+					Color: kickColor,
+					Author: &discordgo.MessageEmbedAuthor{
+						URL:     member.AvatarURL("2048"),
+						IconURL: member.AvatarURL("256"),
+						Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
+					},
+					Thumbnail: &discordgo.MessageEmbedThumbnail{
+						URL:    member.AvatarURL("2048"),
+						Width:  2048,
+						Height: 2048,
+					},
+					Description: FormatKicks(g.GuildUser[member.ID].Kicks),
+					Timestamp:   time.Now().Format(time.RFC3339),
+				}
+				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+
+				if err != nil {
+					return
+				}
+
 			}
 		}
 
@@ -585,41 +586,39 @@ func Check(ctx Context) {
 	case "BANS":
 
 		for _, member := range members {
-			for _, usr := range g.GuildUser {
-				if usr.User.ID == member.ID {
+			if _, ok := g.GuildUser[member.ID]; ok {
 
-					if len(usr.Warnings) == 0 {
-						msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "No bans found!")
-						if err != nil {
-							log.Println(err)
-						}
-						DeleteMessageWithTime(ctx, msg.ID, 5000)
-						return
-					}
-
-					embed := &discordgo.MessageEmbed{
-						Title: fmt.Sprintf("Ban Stats [%d]", len(usr.Bans)),
-						Color: banColor,
-						Author: &discordgo.MessageEmbedAuthor{
-							URL:     member.AvatarURL("2048"),
-							IconURL: member.AvatarURL("256"),
-							Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
-						},
-						Thumbnail: &discordgo.MessageEmbedThumbnail{
-							URL:    member.AvatarURL("2048"),
-							Width:  2048,
-							Height: 2048,
-						},
-						Description: FormatBans(usr.Bans),
-						Timestamp:   time.Now().Format(time.RFC3339),
-					}
-					_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
-
+				if len(g.GuildUser[member.ID].Bans) == 0 {
+					msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | No bans found!")
 					if err != nil {
-						return
+						log.Println(err)
 					}
-
+					DeleteMessageWithTime(ctx, msg.ID, 5000)
+					return
 				}
+
+				embed := &discordgo.MessageEmbed{
+					Title: fmt.Sprintf("Ban Stats [%d]", len(g.GuildUser[member.ID].Bans)),
+					Color: banColor,
+					Author: &discordgo.MessageEmbedAuthor{
+						URL:     member.AvatarURL("2048"),
+						IconURL: member.AvatarURL("256"),
+						Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
+					},
+					Thumbnail: &discordgo.MessageEmbedThumbnail{
+						URL:    member.AvatarURL("2048"),
+						Width:  2048,
+						Height: 2048,
+					},
+					Description: FormatBans(g.GuildUser[member.ID].Bans),
+					Timestamp:   time.Now().Format(time.RFC3339),
+				}
+				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+
+				if err != nil {
+					return
+				}
+
 			}
 		}
 
@@ -628,41 +627,39 @@ func Check(ctx Context) {
 	case "USERNAMES":
 
 		for _, member := range members {
-			for _, usr := range g.GuildUser {
-				if usr.User.ID == member.ID {
+			if _, ok := g.GuildUser[member.ID]; ok {
 
-					if len(usr.Usernames) == 0 {
-						msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "No usernames found!")
-						if err != nil {
-							log.Println(err)
-						}
-						DeleteMessageWithTime(ctx, msg.ID, 5000)
-						return
-					}
-
-					embed := &discordgo.MessageEmbed{
-						Title: fmt.Sprintf("Previous Usernames [%d]", len(usr.Usernames)),
-						Color: RandomInt(0, 16777215),
-						Author: &discordgo.MessageEmbedAuthor{
-							URL:     member.AvatarURL("2048"),
-							IconURL: member.AvatarURL("256"),
-							Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
-						},
-						Thumbnail: &discordgo.MessageEmbedThumbnail{
-							URL:    member.AvatarURL("2048"),
-							Width:  2048,
-							Height: 2048,
-						},
-						Description: FormatUsernames(usr.Usernames),
-						Timestamp:   time.Now().Format(time.RFC3339),
-					}
-					_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
-
+				if len(g.GuildUser[member.ID].Usernames) == 0 {
+					msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | No usernames found!")
 					if err != nil {
-						return
+						log.Println(err)
 					}
-
+					DeleteMessageWithTime(ctx, msg.ID, 5000)
+					return
 				}
+
+				embed := &discordgo.MessageEmbed{
+					Title: fmt.Sprintf("Previous Usernames [%d]", len(g.GuildUser[member.ID].Usernames)),
+					Color: RandomInt(0, 16777215),
+					Author: &discordgo.MessageEmbedAuthor{
+						URL:     member.AvatarURL("2048"),
+						IconURL: member.AvatarURL("256"),
+						Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
+					},
+					Thumbnail: &discordgo.MessageEmbedThumbnail{
+						URL:    member.AvatarURL("2048"),
+						Width:  2048,
+						Height: 2048,
+					},
+					Description: FormatUsernames(g.GuildUser[member.ID].Usernames),
+					Timestamp:   time.Now().Format(time.RFC3339),
+				}
+				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+
+				if err != nil {
+					return
+				}
+
 			}
 		}
 
@@ -671,102 +668,213 @@ func Check(ctx Context) {
 	case "NICKNAMES":
 
 		for _, member := range members {
-			for _, usr := range g.GuildUser {
-				if usr.User.ID == member.ID {
+			if _, ok := g.GuildUser[member.ID]; ok {
 
-					if len(usr.Nicknames) == 0 {
-						msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "No nicknames found!")
-						if err != nil {
-							log.Println(err)
-						}
-						DeleteMessageWithTime(ctx, msg.ID, 5000)
-						return
-					}
-
-					embed := &discordgo.MessageEmbed{
-						Title: fmt.Sprintf("Previous Nicknames [%d]", len(usr.Nicknames)),
-						Color: RandomInt(0, 16777215),
-						Author: &discordgo.MessageEmbedAuthor{
-							URL:     member.AvatarURL("2048"),
-							IconURL: member.AvatarURL("256"),
-							Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
-						},
-						Thumbnail: &discordgo.MessageEmbedThumbnail{
-							URL:    member.AvatarURL("2048"),
-							Width:  2048,
-							Height: 2048,
-						},
-						Description: FormatNicknames(usr.Nicknames),
-						Timestamp:   time.Now().Format(time.RFC3339),
-					}
-					_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
-
+				if len(g.GuildUser[member.ID].Nicknames) == 0 {
+					msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | No nicknames found!")
 					if err != nil {
-						return
+						log.Println(err)
 					}
-
+					DeleteMessageWithTime(ctx, msg.ID, 5000)
+					return
 				}
+
+				embed := &discordgo.MessageEmbed{
+					Title: fmt.Sprintf("Previous Nicknames [%d]", len(g.GuildUser[member.ID].Nicknames)),
+					Color: RandomInt(0, 16777215),
+					Author: &discordgo.MessageEmbedAuthor{
+						URL:     member.AvatarURL("2048"),
+						IconURL: member.AvatarURL("256"),
+						Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
+					},
+					Thumbnail: &discordgo.MessageEmbedThumbnail{
+						URL:    member.AvatarURL("2048"),
+						Width:  2048,
+						Height: 2048,
+					},
+					Description: FormatNicknames(g.GuildUser[member.ID].Nicknames),
+					Timestamp:   time.Now().Format(time.RFC3339),
+				}
+				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+
+				if err != nil {
+					return
+				}
+
 			}
 		}
 
 	default:
 
 		for _, member := range members {
-			for _, usr := range g.GuildUser {
-				if usr.User.ID == member.ID {
+			if _, ok := g.GuildUser[member.ID]; ok {
 
-					embed := &discordgo.MessageEmbed{
-						Title: fmt.Sprintf("Run `%scheck <@member|ID|Name#xxxx> [warnings|mutes|kicks|bans|usernames|nicknames]` for a complete list of information.", g.GuildPrefix),
-						Color: RandomInt(0, 16777215),
-						Author: &discordgo.MessageEmbedAuthor{
-							URL:     member.AvatarURL("2048"),
-							IconURL: member.AvatarURL("256"),
-							Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
+				embed := &discordgo.MessageEmbed{
+					Title: fmt.Sprintf("Run `%scheck <@member|ID|Name#xxxx> [warnings|mutes|kicks|bans|usernames|nicknames]` for a complete list of information.", g.GuildPrefix),
+					Color: RandomInt(0, 16777215),
+					Author: &discordgo.MessageEmbedAuthor{
+						URL:     member.AvatarURL("2048"),
+						IconURL: member.AvatarURL("256"),
+						Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
+					},
+					Thumbnail: &discordgo.MessageEmbedThumbnail{
+						URL:    member.AvatarURL("2048"),
+						Width:  2048,
+						Height: 2048,
+					},
+					Fields: []*discordgo.MessageEmbedField{
+						&discordgo.MessageEmbedField{
+							Name:   fmt.Sprintf("❯ Total Warnings"),
+							Value:  fmt.Sprintf("%d", len(g.GuildUser[member.ID].Warnings)),
+							Inline: false,
 						},
-						Thumbnail: &discordgo.MessageEmbedThumbnail{
-							URL:    member.AvatarURL("2048"),
-							Width:  2048,
-							Height: 2048,
+						&discordgo.MessageEmbedField{
+							Name:   fmt.Sprintf("❯ Total Mutes"),
+							Value:  fmt.Sprintf("%d", len(g.GuildUser[member.ID].Mutes)),
+							Inline: false,
 						},
-						Fields: []*discordgo.MessageEmbedField{
-							&discordgo.MessageEmbedField{
-								Name:   fmt.Sprintf("❯ Total Warnings"),
-								Value:  fmt.Sprintf("%d", len(usr.Warnings)),
-								Inline: false,
-							},
-							&discordgo.MessageEmbedField{
-								Name:   fmt.Sprintf("❯ Total Mutes"),
-								Value:  fmt.Sprintf("%d", len(usr.Mutes)),
-								Inline: false,
-							},
-							&discordgo.MessageEmbedField{
-								Name:   fmt.Sprintf("❯ Total Kicks"),
-								Value:  fmt.Sprintf("%d", len(usr.Kicks)),
-								Inline: false,
-							},
-							&discordgo.MessageEmbedField{
-								Name:   fmt.Sprintf("❯ Total Bans"),
-								Value:  fmt.Sprintf("%d", len(usr.Bans)),
-								Inline: false,
-							},
-							&discordgo.MessageEmbedField{
-								Name:   fmt.Sprintf("❯ Total Usernames"),
-								Value:  fmt.Sprintf("%d", len(usr.Usernames)),
-								Inline: false,
-							},
-							&discordgo.MessageEmbedField{
-								Name:   fmt.Sprintf("❯ Total Nicknames"),
-								Value:  fmt.Sprintf("%d", len(usr.Nicknames)),
-								Inline: false,
-							},
+						&discordgo.MessageEmbedField{
+							Name:   fmt.Sprintf("❯ Total Kicks"),
+							Value:  fmt.Sprintf("%d", len(g.GuildUser[member.ID].Kicks)),
+							Inline: false,
 						},
-						Timestamp: time.Now().Format(time.RFC3339),
-					}
-
-					ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+						&discordgo.MessageEmbedField{
+							Name:   fmt.Sprintf("❯ Total Bans"),
+							Value:  fmt.Sprintf("%d", len(g.GuildUser[member.ID].Bans)),
+							Inline: false,
+						},
+						&discordgo.MessageEmbedField{
+							Name:   fmt.Sprintf("❯ Total Usernames"),
+							Value:  fmt.Sprintf("%d", len(g.GuildUser[member.ID].Usernames)),
+							Inline: false,
+						},
+						&discordgo.MessageEmbedField{
+							Name:   fmt.Sprintf("❯ Total Nicknames"),
+							Value:  fmt.Sprintf("%d", len(g.GuildUser[member.ID].Nicknames)),
+							Inline: false,
+						},
+					},
+					Timestamp: time.Now().Format(time.RFC3339),
 				}
+
+				ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
 			}
 		}
 
 	}
+}
+
+// Clear :
+// Clears a GuildUser's recorded information
+func Clear(ctx Context) {
+
+	// Fetch users from message content
+	members, checkType := FetchMessageContentUsersString(ctx, strings.Join(ctx.Args, ctx.Command.ArgsDelim))
+
+	// Type of check to look for
+	if len(checkType) > 1 {
+		checkType = strings.ToUpper(checkType)[1:]
+	}
+
+	// Returns if a user cannot be found in the message, deletes delayed response
+	if len(members) == 0 {
+		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot find that user!")
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		DeleteMessageWithTime(ctx, msg.ID, 7500)
+		return
+	}
+
+	member := members[0]
+
+	// Fetch Guild information from redis database
+	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var g Guild
+	err = json.Unmarshal(data, &g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Check for User ID in Guild map, register user if missing
+	if _, ok := g.GuildUser[member.ID]; !ok {
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I do not have any information on that user.")
+		return
+	}
+
+	user := g.GuildUser[member.ID]
+
+	switch checkType {
+	case "WARN":
+		fallthrough
+	case "WARNS":
+		fallthrough
+	case "WARNINGS":
+		user.Warnings = []Warnings{}
+	case "MUTE":
+		fallthrough
+	case "MUTES":
+		user.Mutes = []Mutes{}
+	case "KICK":
+		fallthrough
+	case "KICKS":
+		user.Kicks = []Kicks{}
+	case "BAN":
+		fallthrough
+	case "BANS":
+		user.Bans = []Bans{}
+	case "NICKNAME":
+		fallthrough
+	case "NICKNAMES":
+		user.Nicknames = []Nicknames{}
+	case "USERNAME":
+		fallthrough
+	case "USERNAMES":
+		user.Usernames = []Usernames{}
+		user.Usernames = append(user.Usernames, Usernames{
+			Username:      user.User.Username,
+			Discriminator: user.User.Discriminator,
+			Time:          time.Now(),
+		})
+	case "ALL":
+		user.Warnings = []Warnings{}
+		user.Mutes = []Mutes{}
+		user.Kicks = []Kicks{}
+		user.Bans = []Bans{}
+		user.Nicknames = []Nicknames{}
+		user.Usernames = []Usernames{}
+		user.Usernames = append(user.Usernames, Usernames{
+			Username:      user.User.Username,
+			Discriminator: user.User.Discriminator,
+			Time:          time.Now(),
+		})
+	default:
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | Please choose a type to clear `<warnings|mutes|kicks|bans|usernames|nicknames|all>`")
+		return
+	}
+
+	// Set newly modified user back into GuildUser struct
+	g.GuildUser[member.ID] = user
+
+	serialized, err := json.Marshal(g)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	_, err = p.Do("SET", ctx.Guild.ID, serialized)
+	if err != nil {
+		log.Println(err)
+	}
+
+	ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("✅ | %s cleared successfully!", strings.ToTitle(checkType)))
 }
