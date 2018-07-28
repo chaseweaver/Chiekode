@@ -1,9 +1,8 @@
 # Nagato
 WIP Discord bot written in golang using [Discordgo](https://github.com/bwmarrin/discordgo).
 
-# Progress
-I am currently constructing the templates for this project.
-Some of the command-properties are not yet implemented.
+# Progress / TODO
+See [TODO](https://github.com/chaseweaver/Nagato/blob/master/TODO.md)
 
 # Info
 This project was started as a more-modular based approach to handle commands and events.
@@ -24,7 +23,7 @@ Example and templates are shown below.
     * Follow the install for the developer branch of [Discordgo](https://github.com/bwmarrin/discordgo)
     * Also install [gonfig](https://github.com/Tkanos/gonfig) using the same process.
     * And again [redigo](https://github.com/gomodule/redigo)
-    * And again again [go-cahce](https://github.com/patrickmn/go-cache)
+    * And again again [go-cache](https://github.com/patrickmn/go-cache)
 3. Rename `config.ex.json` to `config.json`
 4. Register a bot account at [Discord App Developers](https://discordapp.com/developers/docs/intro)
 5. Grab bot `Token` and paste it in the newly renamed `config.json` file.
