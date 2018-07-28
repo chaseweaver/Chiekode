@@ -174,17 +174,10 @@ func GuildDelete(s *discordgo.Session, m *discordgo.GuildDelete) {
 func GuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 
 	// Fetch Guild information from redis database
-	data, err := redis.Bytes(p.Do("GET", m.GuildID))
+	g, err := UnpackGuildStruct(m.GuildID)
 	if err != nil {
 		log.Println(err)
 		return
-	}
-
-	var g Guild
-	err = json.Unmarshal(data, &g)
-
-	if err != nil {
-		log.Println(err)
 	}
 
 	// Get guild from user ID
@@ -234,17 +227,10 @@ func GuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 func GuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRemove) {
 
 	// Fetch Guild information from redis database
-	data, err := redis.Bytes(p.Do("GET", m.GuildID))
+	g, err := UnpackGuildStruct(m.GuildID)
 	if err != nil {
 		log.Println(err)
 		return
-	}
-
-	var g Guild
-	err = json.Unmarshal(data, &g)
-
-	if err != nil {
-		log.Println(err)
 	}
 
 	// Get guild from user ID
@@ -304,44 +290,24 @@ func MessageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
 	}
 
 	// Fetch Guild information from redis database
-	data, err := redis.Bytes(p.Do("GET", m.GuildID))
+	g, err := UnpackGuildStruct(m.GuildID)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	var g Guild
-	err = json.Unmarshal(data, &g)
-
-	if err != nil {
-		log.Println(err)
-	}
-
 	// Send deleted message to the guild deleted-channel
 	if g.MessageDeleteChannel != nil {
 
-		s.ChannelMessageSendEmbed(g.MessageDeleteChannel.ID, &discordgo.MessageEmbed{
-			Title: "Deleted Message",
-			Color: deleteColor,
-			Author: &discordgo.MessageEmbedAuthor{
-				URL:     mo.Author.AvatarURL("2048"),
-				IconURL: mo.Author.AvatarURL("256"),
-				Name:    fmt.Sprintf("%s#%s / %s", mo.Author.Username, mo.Author.Discriminator, mo.Author.ID),
-			},
-			Fields: []*discordgo.MessageEmbedField{
-				&discordgo.MessageEmbedField{
-					Name:   "Channel",
-					Value:  fmt.Sprintf("<#%s>", mo.ChannelID),
-					Inline: false,
-				},
-				&discordgo.MessageEmbedField{
-					Name:   "Content",
-					Value:  mo.Content,
-					Inline: false,
-				},
-			},
-			Timestamp: time.Now().Format(time.RFC3339),
-		})
+		s.ChannelMessageSendEmbed(g.MessageDeleteChannel.ID,
+			NewEmbed().
+				SetTitle("Deleted Message").
+				SetColor(deleteColor).
+				SetAuthor(fmt.Sprintf("%s#%s / %s", mo.Author.Username, mo.Author.Discriminator, mo.Author.ID), mo.Author.AvatarURL("256"), mo.Author.AvatarURL("2048")).
+				AddField("Channel", fmt.Sprintf("<#%s>", m.ChannelID)).
+				AddField("Content", mo.Content).
+				SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
+
 	}
 }
 
@@ -365,49 +331,25 @@ func MessageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	}
 
 	// Fetch Guild information from redis database
-	data, err := redis.Bytes(p.Do("GET", m.GuildID))
+	g, err := UnpackGuildStruct(m.GuildID)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	var g Guild
-	err = json.Unmarshal(data, &g)
-
-	if err != nil {
-		log.Println(err)
-	}
-
 	// Send edited message to the guild edited-channel
 	if g.MessageEditChannel != nil {
 
-		s.ChannelMessageSendEmbed(g.MessageEditChannel.ID, &discordgo.MessageEmbed{
-			Title: "Edited Message",
-			Color: editColor,
-			Author: &discordgo.MessageEmbedAuthor{
-				URL:     mo.Author.AvatarURL("2048"),
-				IconURL: mo.Author.AvatarURL("256"),
-				Name:    fmt.Sprintf("%s#%s / %s", mo.Author.Username, mo.Author.Discriminator, mo.Author.ID),
-			},
-			Fields: []*discordgo.MessageEmbedField{
-				&discordgo.MessageEmbedField{
-					Name:   "Channel",
-					Value:  fmt.Sprintf("<#%s>", m.ChannelID),
-					Inline: false,
-				},
-				&discordgo.MessageEmbedField{
-					Name:   "Old Content",
-					Value:  mo.Content,
-					Inline: false,
-				},
-				&discordgo.MessageEmbedField{
-					Name:   "New Content",
-					Value:  m.Content,
-					Inline: false,
-				},
-			},
-			Timestamp: time.Now().Format(time.RFC3339),
-		})
+		s.ChannelMessageSendEmbed(g.MessageEditChannel.ID,
+			NewEmbed().
+				SetTitle("Edited Message").
+				SetColor(editColor).
+				SetAuthor(fmt.Sprintf("%s#%s / %s", mo.Author.Username, mo.Author.Discriminator, mo.Author.ID), mo.Author.AvatarURL("256"), mo.Author.AvatarURL("2048")).
+				AddField("Channel", fmt.Sprintf("<#%s>", m.ChannelID)).
+				AddField("Old Content", mo.Content).
+				AddField("New Content", m.Content).
+				SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
+
 	}
 
 }
@@ -417,17 +359,10 @@ func MessageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) {
 func GuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
 
 	// Fetch Guild information from redis database
-	data, err := redis.Bytes(p.Do("GET", m.GuildID))
+	g, err := UnpackGuildStruct(m.GuildID)
 	if err != nil {
 		log.Println(err)
 		return
-	}
-
-	var g Guild
-	err = json.Unmarshal(data, &g)
-
-	if err != nil {
-		log.Println(err)
 	}
 
 	// Check for User ID in Guild map, register user if missing
@@ -493,16 +428,9 @@ func GuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
 
 	g.GuildUser[m.User.ID] = user
 
-	serialized, err := json.Marshal(g)
-
+	err = PackGuildStruct(m.GuildID, g)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-
-	_, err = p.Do("SET", m.GuildID, serialized)
-	if err != nil {
-		log.Println(err)
-	}
-
 }

@@ -281,7 +281,7 @@ func Set(ctx Context) {
 func ResetGuildSettings(ctx Context) {
 
 	// Reinitialize guild prefix with configuration defaults
-	serialized, err := json.Marshal(&Guild{
+	g := Guild{
 		Guild:               ctx.Guild,
 		GuildPrefix:         conf.Prefix,
 		WelcomeMessage:      "Welcome $MEMBER_MENTION$ to $GUILD_NAME$! Enjoy your stay.",
@@ -289,14 +289,9 @@ func ResetGuildSettings(ctx Context) {
 		MemberAddMessage:    "✅ | `$MEMBER_NAME&` (ID: $MEMBER_ID$ | Age: $MEMBER_AGE$) has joinied the guild.",
 		MemberRemoveMessage: "❌ | `$MEMBER_NAME&` (ID: $MEMBER_ID$ | Age: $MEMBER_AGE$ | Joined At: $MEMBER_JOINED$) has left the guild.",
 		GuildUser:           make(map[string]GuildUser),
-	})
-
-	if err != nil {
-		log.Println(err)
-		return
 	}
 
-	_, err = p.Do("SET", ctx.Guild.ID, serialized)
+	err = PackGuildStruct(ctx.Guild.ID, g)
 	if err != nil {
 		log.Println(err)
 		return

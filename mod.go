@@ -481,28 +481,15 @@ func Check(ctx Context) {
 		return
 	}
 
-	// Get guild information from database
-	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+	// Fetch guild information
+	g, err := UnpackGuildStruct(ctx.Guild.ID)
 	if err != nil {
 		log.Println(err)
-	}
-
-	var g Guild
-	err = json.Unmarshal(data, &g)
-
-	if err != nil {
-		log.Println(err)
+		return
 	}
 
 	switch checkType {
-	case "WARN":
-		fallthrough
-	case "WARNS":
-		fallthrough
-	case "WARNING":
-		fallthrough
 	case "WARNINGS":
-
 		for _, member := range members {
 			if _, ok := g.GuildUser[member.ID]; ok {
 
@@ -515,35 +502,34 @@ func Check(ctx Context) {
 					return
 				}
 
-				embed := &discordgo.MessageEmbed{
-					Title: fmt.Sprintf("Warning Stats [%d]", len(g.GuildUser[member.ID].Warnings)),
-					Color: warningColor,
-					Author: &discordgo.MessageEmbedAuthor{
-						URL:     member.AvatarURL("2048"),
-						IconURL: member.AvatarURL("256"),
-						Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
-					},
-					Thumbnail: &discordgo.MessageEmbedThumbnail{
-						URL:    member.AvatarURL("2048"),
-						Width:  2048,
-						Height: 2048,
-					},
-					Description: FormatWarnings(g.GuildUser[member.ID].Warnings),
-					Timestamp:   time.Now().Format(time.RFC3339),
+				str := "\n"
+				for _, v := range g.GuildUser[member.ID].Warnings {
+					avatar := fmt.Sprintf("%s#%s / %s", v.AuthorUser.Username, v.AuthorUser.Discriminator, v.AuthorUser.ID)
+					channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
+
+					str = str + fmt.Sprintf(
+						"**Author**:\t%s\n"+
+							"**Channel**:  %s\n"+
+							"**Time**:\t\t%s\n"+
+							"**Reason**:   %s\n\n",
+						avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
 				}
-				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+
+				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
+					NewEmbed().
+						SetTitle(fmt.Sprintf("Warning Stats [%d]", len(g.GuildUser[member.ID].Warnings))).
+						SetColor(warningColor).
+						SetAuthor(fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID), g.GuildUser[member.ID].User.AvatarURL("256"), g.GuildUser[member.ID].User.AvatarURL("2048")).
+						SetDescription(str).
+						SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
 
 				if err != nil {
 					return
 				}
-
 			}
 		}
 
-	case "KICK":
-		fallthrough
 	case "KICKS":
-
 		for _, member := range members {
 			if _, ok := g.GuildUser[member.ID]; ok {
 
@@ -556,35 +542,35 @@ func Check(ctx Context) {
 					return
 				}
 
-				embed := &discordgo.MessageEmbed{
-					Title: fmt.Sprintf("Kick Stats [%d]", len(g.GuildUser[member.ID].Kicks)),
-					Color: kickColor,
-					Author: &discordgo.MessageEmbedAuthor{
-						URL:     member.AvatarURL("2048"),
-						IconURL: member.AvatarURL("256"),
-						Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
-					},
-					Thumbnail: &discordgo.MessageEmbedThumbnail{
-						URL:    member.AvatarURL("2048"),
-						Width:  2048,
-						Height: 2048,
-					},
-					Description: FormatKicks(g.GuildUser[member.ID].Kicks),
-					Timestamp:   time.Now().Format(time.RFC3339),
+				str := "\n"
+				for _, v := range g.GuildUser[member.ID].Kicks {
+					avatar := fmt.Sprintf("%s#%s / %s", v.AuthorUser.Username, v.AuthorUser.Discriminator, v.AuthorUser.ID)
+					channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
+
+					str = str + fmt.Sprintf(
+						"**Author**:\t%s\n"+
+							"**Channel**:  %s\n"+
+							"**Time**:\t\t%s\n"+
+							"**Reason**:   %s\n\n",
+						avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
 				}
-				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+
+				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
+					NewEmbed().
+						SetTitle(fmt.Sprintf("Warning Stats [%d]", len(g.GuildUser[member.ID].Kicks))).
+						SetColor(warningColor).
+						SetAuthor(fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID), g.GuildUser[member.ID].User.AvatarURL("256"), g.GuildUser[member.ID].User.AvatarURL("2048")).
+						SetDescription(str).
+						SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
 
 				if err != nil {
+					log.Println(err)
 					return
 				}
-
 			}
 		}
 
-	case "BAN":
-		fallthrough
 	case "BANS":
-
 		for _, member := range members {
 			if _, ok := g.GuildUser[member.ID]; ok {
 
@@ -597,74 +583,33 @@ func Check(ctx Context) {
 					return
 				}
 
-				embed := &discordgo.MessageEmbed{
-					Title: fmt.Sprintf("Ban Stats [%d]", len(g.GuildUser[member.ID].Bans)),
-					Color: banColor,
-					Author: &discordgo.MessageEmbedAuthor{
-						URL:     member.AvatarURL("2048"),
-						IconURL: member.AvatarURL("256"),
-						Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
-					},
-					Thumbnail: &discordgo.MessageEmbedThumbnail{
-						URL:    member.AvatarURL("2048"),
-						Width:  2048,
-						Height: 2048,
-					},
-					Description: FormatBans(g.GuildUser[member.ID].Bans),
-					Timestamp:   time.Now().Format(time.RFC3339),
+				str := "\n"
+				for _, v := range g.GuildUser[member.ID].Bans {
+					avatar := fmt.Sprintf("%s#%s / %s", v.AuthorUser.Username, v.AuthorUser.Discriminator, v.AuthorUser.ID)
+					channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
+
+					str = str + fmt.Sprintf(
+						"**Author**:\t%s\n"+
+							"**Channel**:  %s\n"+
+							"**Time**:\t\t%s\n"+
+							"**Reason**:   %s\n\n",
+						avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
 				}
-				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+
+				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
+					NewEmbed().
+						SetTitle(fmt.Sprintf("Warning Stats [%d]", len(g.GuildUser[member.ID].Bans))).
+						SetColor(warningColor).
+						SetAuthor(fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID), g.GuildUser[member.ID].User.AvatarURL("256"), g.GuildUser[member.ID].User.AvatarURL("2048")).
+						SetDescription(str).
+						SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
 
 				if err != nil {
 					return
 				}
-
 			}
 		}
 
-	case "USERNAME":
-		fallthrough
-	case "USERNAMES":
-
-		for _, member := range members {
-			if _, ok := g.GuildUser[member.ID]; ok {
-
-				if len(g.GuildUser[member.ID].Usernames) == 0 {
-					msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | No usernames found!")
-					if err != nil {
-						log.Println(err)
-					}
-					DeleteMessageWithTime(ctx, msg.ID, 5000)
-					return
-				}
-
-				embed := &discordgo.MessageEmbed{
-					Title: fmt.Sprintf("Previous Usernames [%d]", len(g.GuildUser[member.ID].Usernames)),
-					Color: RandomInt(0, 16777215),
-					Author: &discordgo.MessageEmbedAuthor{
-						URL:     member.AvatarURL("2048"),
-						IconURL: member.AvatarURL("256"),
-						Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
-					},
-					Thumbnail: &discordgo.MessageEmbedThumbnail{
-						URL:    member.AvatarURL("2048"),
-						Width:  2048,
-						Height: 2048,
-					},
-					Description: FormatUsernames(g.GuildUser[member.ID].Usernames),
-					Timestamp:   time.Now().Format(time.RFC3339),
-				}
-				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
-
-				if err != nil {
-					return
-				}
-
-			}
-		}
-
-	case "NICKNAME":
-		fallthrough
 	case "NICKNAMES":
 
 		for _, member := range members {
@@ -698,9 +643,9 @@ func Check(ctx Context) {
 				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
 
 				if err != nil {
+					log.Println(err)
 					return
 				}
-
 			}
 		}
 
@@ -709,58 +654,26 @@ func Check(ctx Context) {
 		for _, member := range members {
 			if _, ok := g.GuildUser[member.ID]; ok {
 
-				embed := &discordgo.MessageEmbed{
-					Title: fmt.Sprintf("Run `%scheck <@member|ID|Name#xxxx> [warnings|mutes|kicks|bans|usernames|nicknames]` for a complete list of information.", g.GuildPrefix),
-					Color: RandomInt(0, 16777215),
-					Author: &discordgo.MessageEmbedAuthor{
-						URL:     member.AvatarURL("2048"),
-						IconURL: member.AvatarURL("256"),
-						Name:    fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID),
-					},
-					Thumbnail: &discordgo.MessageEmbedThumbnail{
-						URL:    member.AvatarURL("2048"),
-						Width:  2048,
-						Height: 2048,
-					},
-					Fields: []*discordgo.MessageEmbedField{
-						&discordgo.MessageEmbedField{
-							Name:   fmt.Sprintf("❯ Total Warnings"),
-							Value:  fmt.Sprintf("%d", len(g.GuildUser[member.ID].Warnings)),
-							Inline: false,
-						},
-						&discordgo.MessageEmbedField{
-							Name:   fmt.Sprintf("❯ Total Mutes"),
-							Value:  fmt.Sprintf("%d", len(g.GuildUser[member.ID].Mutes)),
-							Inline: false,
-						},
-						&discordgo.MessageEmbedField{
-							Name:   fmt.Sprintf("❯ Total Kicks"),
-							Value:  fmt.Sprintf("%d", len(g.GuildUser[member.ID].Kicks)),
-							Inline: false,
-						},
-						&discordgo.MessageEmbedField{
-							Name:   fmt.Sprintf("❯ Total Bans"),
-							Value:  fmt.Sprintf("%d", len(g.GuildUser[member.ID].Bans)),
-							Inline: false,
-						},
-						&discordgo.MessageEmbedField{
-							Name:   fmt.Sprintf("❯ Total Usernames"),
-							Value:  fmt.Sprintf("%d", len(g.GuildUser[member.ID].Usernames)),
-							Inline: false,
-						},
-						&discordgo.MessageEmbedField{
-							Name:   fmt.Sprintf("❯ Total Nicknames"),
-							Value:  fmt.Sprintf("%d", len(g.GuildUser[member.ID].Nicknames)),
-							Inline: false,
-						},
-					},
-					Timestamp: time.Now().Format(time.RFC3339),
-				}
+				_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
+					NewEmbed().
+						SetTitle(fmt.Sprintf("Run `%scheck <@member|ID|Name#xxxx> [warnings|mutes|kicks|bans|usernames|nicknames]` for a complete list of information.", g.GuildPrefix)).
+						SetColor(RandomInt(0, 16777215)).
+						SetAuthor(fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID), g.GuildUser[member.ID].User.AvatarURL("256"), g.GuildUser[member.ID].User.AvatarURL("2048")).
+						SetThumbnail(member.AvatarURL("2048")).
+						AddField("❯ Total Warnings", fmt.Sprintf("%d", len(g.GuildUser[member.ID].Warnings))).
+						AddField("❯ Total Mutes", fmt.Sprintf("%d", len(g.GuildUser[member.ID].Mutes))).
+						AddField("❯ Total Kicks", fmt.Sprintf("%d", len(g.GuildUser[member.ID].Kicks))).
+						AddField("❯ Total Bans", fmt.Sprintf("%d", len(g.GuildUser[member.ID].Bans))).
+						AddField("❯ Total Nicknames", fmt.Sprintf("%d", len(g.GuildUser[member.ID].Nicknames))).
+						AddField("❯ Total Usernames", fmt.Sprintf("%d", len(g.GuildUser[member.ID].Usernames))).
+						SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
 
-				ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, embed)
+				if err != nil {
+					log.Println(err)
+					return
+				}
 			}
 		}
-
 	}
 }
 
@@ -813,26 +726,14 @@ func Clear(ctx Context) {
 	user := g.GuildUser[member.ID]
 
 	switch checkType {
-	case "WARN":
-		fallthrough
-	case "WARNS":
-		fallthrough
 	case "WARNINGS":
-		user.Warnings = []Warnings{}
-	case "MUTE":
-		fallthrough
+		user.Warnings = make(map[string]Warnings)
 	case "MUTES":
-		user.Mutes = []Mutes{}
-	case "KICK":
-		fallthrough
+		user.Mutes = make(map[string]Mutes)
 	case "KICKS":
-		user.Kicks = []Kicks{}
-	case "BAN":
-		fallthrough
+		user.Kicks = make(map[string]Kicks)
 	case "BANS":
-		user.Bans = []Bans{}
-	case "NICKNAME":
-		fallthrough
+		user.Bans = make(map[string]Bans)
 	case "NICKNAMES":
 		user.Nicknames = []Nicknames{}
 	case "USERNAME":
@@ -845,10 +746,10 @@ func Clear(ctx Context) {
 			Time:          time.Now(),
 		})
 	case "ALL":
-		user.Warnings = []Warnings{}
-		user.Mutes = []Mutes{}
-		user.Kicks = []Kicks{}
-		user.Bans = []Bans{}
+		user.Warnings = make(map[string]Warnings)
+		user.Mutes = make(map[string]Mutes)
+		user.Kicks = make(map[string]Kicks)
+		user.Bans = make(map[string]Bans)
 		user.Nicknames = []Nicknames{}
 		user.Usernames = []Usernames{}
 		user.Usernames = append(user.Usernames, Usernames{

@@ -45,10 +45,10 @@ type (
 		Usernames []Usernames
 		Nicknames []Nicknames
 		Roles     []*discordgo.Role
-		Warnings  []Warnings
-		Kicks     []Kicks
-		Bans      []Bans
-		Mutes     []Mutes
+		Warnings  map[string]Warnings
+		Kicks     map[string]Kicks
+		Bans      map[string]Bans
+		Mutes     map[string]Mutes
 	}
 
 	// Warnings information for a user
@@ -132,6 +132,47 @@ func DialNewPoolURL(url string) *redis.Pool {
 	}
 }
 
+// UnpackGuildStruct :
+// Fetches guild struct from database.
+func UnpackGuildStruct(guildID string) (Guild, error) {
+
+	// Fetch Guild information from redis database
+	data, err := redis.Bytes(p.Do("GET", guildID))
+	if err != nil {
+		log.Println(err)
+		return Guild{}, err
+	}
+
+	var g Guild
+	err = json.Unmarshal(data, &g)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	return g, nil
+}
+
+// PackGuildStruct :
+// Pushes guild struct to database.
+func PackGuildStruct(guildID string, g Guild) error {
+
+	serialized, err := json.Marshal(g)
+
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	_, err = p.Do("SET", guildID, serialized)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
+}
+
 // DeleteGuild :
 // Removes a guild from the database.
 func DeleteGuild(guild *discordgo.Guild) (interface{}, error) {
@@ -206,10 +247,10 @@ func RegisterNewUser(user *discordgo.User) GuildUser {
 		Usernames: []Usernames{},
 		Nicknames: []Nicknames{},
 		Roles:     []*discordgo.Role{},
-		Warnings:  []Warnings{},
-		Kicks:     []Kicks{},
-		Bans:      []Bans{},
-		Mutes:     []Mutes{},
+		Warnings:  make(map[string]Warnings),
+		Kicks:     make(map[string]Kicks),
+		Bans:      make(map[string]Bans),
+		Mutes:     make(map[string]Mutes),
 	}
 
 	// Add the current username to the GuildUser
@@ -226,56 +267,49 @@ func RegisterNewUser(user *discordgo.User) GuildUser {
 // Logs a warning to a user's record in the redis database.
 func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 
-	// Fetch Guild information from redis database
-	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+	// Fetch guild information
+	g, err := UnpackGuildStruct(ctx.Guild.ID)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	var g Guild
-	err = json.Unmarshal(data, &g)
-
-	if err != nil {
-		log.Println(err)
-	}
-
+	// Check for existing GuildUser, map warnings
 	if _, ok := g.GuildUser[mem.ID]; ok {
 
 		user := g.GuildUser[mem.ID]
-		user.Warnings = append(user.Warnings, Warnings{
+		warning := Warnings{
 			AuthorUser: ctx.Event.Author,
 			TargetUser: mem,
 			Channel:    ctx.Channel,
 			Reason:     reason,
 			Time:       time.Now(),
-		})
+		}
+
+		user.Warnings[TimeKey()] = warning
 		g.GuildUser[mem.ID] = user
 
 	} else {
 
 		user := RegisterNewUser(mem)
-		user.Warnings = append(user.Warnings, Warnings{
+		warning := Warnings{
 			AuthorUser: ctx.Event.Author,
 			TargetUser: mem,
 			Channel:    ctx.Channel,
 			Reason:     reason,
 			Time:       time.Now(),
-		})
+		}
+
+		user.Warnings[TimeKey()] = warning
 		g.GuildUser[mem.ID] = user
 
 	}
 
-	serialized, err := json.Marshal(g)
-
+	// Pack guild information
+	err = PackGuildStruct(ctx.Guild.ID, g)
 	if err != nil {
 		log.Println(err)
 		return
-	}
-
-	_, err = p.Do("SET", ctx.Guild.ID, serialized)
-	if err != nil {
-		log.Println(err)
 	}
 }
 
@@ -283,56 +317,49 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 // Logs a kick to a user's record in the redis database.
 func LogKick(ctx Context, mem *discordgo.User, reason string) {
 
-	// Fetch Guild information from redis database
-	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+	// Fetch guild information
+	g, err := UnpackGuildStruct(ctx.Guild.ID)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	var g Guild
-	err = json.Unmarshal(data, &g)
-
-	if err != nil {
-		log.Println(err)
-	}
-
+	// Check for existing GuildUser, map kicks
 	if _, ok := g.GuildUser[mem.ID]; ok {
 
 		user := g.GuildUser[mem.ID]
-		user.Kicks = append(user.Kicks, Kicks{
+		kick := Kicks{
 			AuthorUser: ctx.Event.Author,
 			TargetUser: mem,
 			Channel:    ctx.Channel,
 			Reason:     reason,
 			Time:       time.Now(),
-		})
+		}
+
+		user.Kicks[TimeKey()] = kick
 		g.GuildUser[mem.ID] = user
 
 	} else {
 
 		user := RegisterNewUser(mem)
-		user.Kicks = append(user.Kicks, Kicks{
+		kick := Kicks{
 			AuthorUser: ctx.Event.Author,
 			TargetUser: mem,
 			Channel:    ctx.Channel,
 			Reason:     reason,
 			Time:       time.Now(),
-		})
+		}
+
+		user.Kicks[TimeKey()] = kick
 		g.GuildUser[mem.ID] = user
 
 	}
 
-	serialized, err := json.Marshal(g)
-
+	// Pack guild information
+	err = PackGuildStruct(ctx.Guild.ID, g)
 	if err != nil {
 		log.Println(err)
 		return
-	}
-
-	_, err = p.Do("SET", ctx.Guild.ID, serialized)
-	if err != nil {
-		log.Println(err)
 	}
 }
 
@@ -340,77 +367,50 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 // Logs a ban to a user's record in the redis database.
 func LogBan(ctx Context, mem *discordgo.User, reason string) {
 
-	// Fetch Guild information from redis database
-	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
+	// Fetch guild information
+	g, err := UnpackGuildStruct(ctx.Guild.ID)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	var g Guild
-	err = json.Unmarshal(data, &g)
-
-	if err != nil {
-		log.Println(err)
-	}
-
+	// Check for existing GuildUser, map bans
 	if _, ok := g.GuildUser[mem.ID]; ok {
 
 		user := g.GuildUser[mem.ID]
-		user.Bans = append(user.Bans, Bans{
+		ban := Bans{
 			AuthorUser: ctx.Event.Author,
 			TargetUser: mem,
 			Channel:    ctx.Channel,
 			Reason:     reason,
 			Time:       time.Now(),
-		})
+		}
+
+		user.Bans[TimeKey()] = ban
 		g.GuildUser[mem.ID] = user
 
 	} else {
 
 		user := RegisterNewUser(mem)
-		user.Bans = append(user.Bans, Bans{
+		ban := Bans{
 			AuthorUser: ctx.Event.Author,
 			TargetUser: mem,
 			Channel:    ctx.Channel,
 			Reason:     reason,
 			Time:       time.Now(),
-		})
+		}
+
+		user.Bans[TimeKey()] = ban
 		g.GuildUser[mem.ID] = user
 
 	}
 
-	serialized, err := json.Marshal(g)
-
+	// Pack guild information
+	err = PackGuildStruct(ctx.Guild.ID, g)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-
-	_, err = p.Do("SET", ctx.Guild.ID, serialized)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-// FormatWarnings :
-// Returns a string of warnings.
-func FormatWarnings(warnings []Warnings) string {
-
-	str := "\n"
-	for _, v := range warnings {
-		avatar := fmt.Sprintf("%s#%s / %s", v.AuthorUser.Username, v.AuthorUser.Discriminator, v.AuthorUser.ID)
-		channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
-
-		str = str + fmt.Sprintf(
-			"**Author**:\t%s\n"+
-				"**Channel**:  %s\n"+
-				"**Time**:\t\t%s\n"+
-				"**Reason**:   %s\n\n",
-			avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
-	}
-
-	return str
 }
 
 // FormatKicks :

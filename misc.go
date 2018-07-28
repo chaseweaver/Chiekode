@@ -213,16 +213,14 @@ func Avatar(ctx Context) {
 
 	// Returns the command author's avatar if no arguments are given, or the command is within a DM
 	if ctx.Channel.Type != discordgo.ChannelTypeGuildText || len(ctx.Args) == 0 {
-		ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, &discordgo.MessageEmbed{
-			Title: fmt.Sprintf("%s's Avatar", ctx.Event.Author.Username),
-			Color: RandomInt(0, 16777215),
-			Image: &discordgo.MessageEmbedImage{
-				URL:    ctx.Event.Author.AvatarURL("2048"),
-				Width:  2048,
-				Height: 2048,
-			},
-			URL: ctx.Event.Author.AvatarURL("2048"),
-		})
+
+		ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
+			NewEmbed().
+				SetTitle(fmt.Sprintf("%s's Avatar", ctx.Event.Author.Username)).
+				SetColor(RandomInt(0, 16777215)).
+				SetImage(ctx.Event.Author.AvatarURL("2048")).
+				SetURL(ctx.Event.Author.AvatarURL("2048")).MessageEmbed)
+
 		return
 	}
 
@@ -231,16 +229,13 @@ func Avatar(ctx Context) {
 
 	// Returns every mentioned member's avatar as seperate messages
 	for _, m := range members {
-		ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID, &discordgo.MessageEmbed{
-			Title: fmt.Sprintf("%s's Avatar", m.Username),
-			Color: RandomInt(0, 16777215),
-			Image: &discordgo.MessageEmbedImage{
-				URL:    m.AvatarURL("2048"),
-				Width:  2048,
-				Height: 2048,
-			},
-			URL: m.AvatarURL("2048"),
-		})
+
+		ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
+			NewEmbed().
+				SetTitle(fmt.Sprintf("%s's Avatar", m.Username)).
+				SetColor(RandomInt(0, 16777215)).
+				SetImage(m.AvatarURL("2048")).
+				SetURL(m.AvatarURL("2048")).MessageEmbed)
 	}
 
 	// Return if the message is not empty and no users can be found
