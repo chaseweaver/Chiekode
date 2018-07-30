@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
@@ -146,7 +147,12 @@ func GuildCreate(s *discordgo.Session, m *discordgo.GuildCreate) {
 		log.Println(err)
 	}
 
-	log.Println(fmt.Sprintf("== New Guild Added ==\nGuild Name: %s\nGuild ID:   %s\n", m.Guild.Name, m.Guild.ID))
+	log.Println(
+		fmt.Sprintf(`
+			== New Guild Added ==\n
+			Guild Name: %s\n
+			Guild ID:   %s\n`,
+			m.Guild.Name, m.Guild.ID))
 }
 
 // GuildDelete :
@@ -164,7 +170,12 @@ func GuildDelete(s *discordgo.Session, m *discordgo.GuildDelete) {
 		log.Println(err)
 	}
 
-	log.Println(fmt.Sprintf("== Guild Removed ==\nGuild Name: %s\nGuild ID:   %s\n", m.Guild.Name, m.Guild.ID))
+	log.Println(
+		fmt.Sprintf(`
+			== Guild Removed ==\n
+			Guild Name: %s\n
+			Guild ID:   %s\n`,
+			m.Guild.Name, m.Guild.ID))
 }
 
 // GuildMemberAdd :
@@ -299,7 +310,7 @@ func MessageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
 	// Send deleted message to the guild deleted-channel
 	if g.MessageDeleteChannel != nil {
 
-		s.ChannelMessageSendEmbed(g.MessageDeleteChannel.ID,
+		_, err := s.ChannelMessageSendEmbed(g.MessageDeleteChannel.ID,
 			NewEmbed().
 				SetTitle("Deleted Message").
 				SetColor(deleteColor).
@@ -307,6 +318,11 @@ func MessageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
 				AddField("Channel", fmt.Sprintf("<#%s>", m.ChannelID)).
 				AddField("Content", mo.Content).
 				SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
+
+		if err != nil {
+			log.Println(err)
+			return
+		}
 
 	}
 }
@@ -340,7 +356,7 @@ func MessageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	// Send edited message to the guild edited-channel
 	if g.MessageEditChannel != nil {
 
-		s.ChannelMessageSendEmbed(g.MessageEditChannel.ID,
+		_, err := s.ChannelMessageSendEmbed(g.MessageEditChannel.ID,
 			NewEmbed().
 				SetTitle("Edited Message").
 				SetColor(editColor).
@@ -350,8 +366,12 @@ func MessageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) {
 				AddField("New Content", m.Content).
 				SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
 
-	}
+		if err != nil {
+			log.Println(err)
+			return
+		}
 
+	}
 }
 
 // GuildMemberUpdate :
@@ -371,33 +391,36 @@ func GuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
 		user = g.GuildUser[m.User.ID]
 	}
 
-	// Get the GuildUser struct
-	index := 0
-
-	// Compensate for index of 0
-	if len(user.Usernames) > 0 {
-		index = len(user.Usernames) - 1
-	}
-
 	// Append Username changes
 	if user.Usernames == nil || len(user.Usernames) == 0 {
-		user.Usernames = append(user.Usernames, Usernames{
+		username := Usernames{
 			Username:      m.User.Username,
 			Discriminator: m.User.Discriminator,
 			Time:          time.Now(),
-		})
-	} else if user.Usernames[index].Username != m.User.Username || user.Usernames[index].Discriminator != m.User.Discriminator {
-		user.Usernames = append(user.Usernames, Usernames{
-			Username:      m.User.Username,
-			Discriminator: m.User.Discriminator,
-			Time:          time.Now(),
-		})
-	}
+		}
+		user.Usernames[MakeTimestamp()] = username
+	} else {
 
-	// Compensate for index of 0
-	index = 0
-	if len(user.Nicknames) > 0 {
-		index = len(user.Nicknames) - 1
+		// Map keys to array
+		var keys []int64
+		for k := range user.Usernames {
+			keys = append(keys, k)
+		}
+
+		// Sort the keys by time
+		sort.Slice(keys, func(i, j int) bool {
+			return keys[i] < keys[j]
+		})
+
+		// Compare last key data with current user
+		if user.Usernames[keys[len(keys)-1]].Username != m.User.Username || user.Usernames[keys[len(keys)-1]].Discriminator != m.User.Discriminator {
+			username := Usernames{
+				Username:      m.User.Username,
+				Discriminator: m.User.Discriminator,
+				Time:          time.Now(),
+			}
+			user.Usernames[MakeTimestamp()] = username
+		}
 	}
 
 	// Append Nickname changes
@@ -408,22 +431,40 @@ func GuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
 			nick = "RESET NICKNAME"
 		}
 
-		user.Nicknames = append(user.Nicknames, Nicknames{
+		nickname := Nicknames{
 			Nickname: nick,
 			Time:     time.Now(),
+		}
+
+		user.Nicknames[MakeTimestamp()] = nickname
+	} else {
+
+		// Map keys to array
+		var keys []int64
+		for k := range user.Nicknames {
+			keys = append(keys, k)
+		}
+
+		// Sort the keys by time
+		sort.Slice(keys, func(i, j int) bool {
+			return keys[i] < keys[j]
 		})
-	} else if user.Nicknames[index].Nickname != m.Nick {
 
 		nick := m.Nick
 
-		if nick == "" {
-			nick = "RESET NICKNAME"
-		}
+		// Compare last key data with current user
+		if user.Nicknames[keys[len(keys)-1]].Nickname != nick {
+			if nick == "" {
+				nick = "RESET NICKNAME"
+			}
 
-		user.Nicknames = append(user.Nicknames, Nicknames{
-			Nickname: nick,
-			Time:     time.Now(),
-		})
+			nickname := Nicknames{
+				Nickname: nick,
+				Time:     time.Now(),
+			}
+
+			user.Nicknames[MakeTimestamp()] = nickname
+		}
 	}
 
 	g.GuildUser[m.User.ID] = user

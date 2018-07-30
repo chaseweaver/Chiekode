@@ -1,13 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 	"time"
-
-	"github.com/gomodule/redigo/redis"
 )
 
 /**
@@ -93,26 +89,5 @@ func ResetGuildDatabase(ctx Context) {
 // Test :
 // Bot owner's test command
 func Test(ctx Context) {
-
-	member := FetchMessageContentUsers(ctx, strings.Join(ctx.Args, ctx.Command.ArgsDelim))[0]
-
-	// Fetch Guild information from redis database
-	data, err := redis.Bytes(p.Do("GET", ctx.Guild.ID))
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	var g Guild
-	err = json.Unmarshal(data, &g)
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	if _, ok := g.GuildUser[member.ID]; ok {
-		log.Println(g.GuildUser)
-	} else {
-		log.Println("Not found!")
-	}
+	return
 }

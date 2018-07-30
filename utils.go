@@ -709,9 +709,3 @@ func UnmuteMember(ctx Context, memberID string) {
 func MakeTimestamp() int64 {
 	return time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
 }
-
-// TimeKey :
-// Converts a unix timestamp to a string to be used as a map key
-func TimeKey() string {
-	return fmt.Sprintf("%d", time.Now().UnixNano()/(int64(time.Millisecond)/int64(time.Nanosecond)))
-}

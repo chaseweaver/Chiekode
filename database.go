@@ -42,13 +42,13 @@ type (
 		Member    *discordgo.Member
 		Age       string
 		JoinedAt  string
-		Usernames []Usernames
-		Nicknames []Nicknames
-		Roles     []*discordgo.Role
-		Warnings  map[string]Warnings
-		Kicks     map[string]Kicks
-		Bans      map[string]Bans
-		Mutes     map[string]Mutes
+		Muted     Muted
+		Usernames map[int64]Usernames
+		Nicknames map[int64]Nicknames
+		Warnings  map[int64]Warnings
+		Kicks     map[int64]Kicks
+		Bans      map[int64]Bans
+		Mutes     map[int64]Mutes
 	}
 
 	// Warnings information for a user
@@ -100,13 +100,20 @@ type (
 		Nickname string
 		Time     time.Time
 	}
+
+	// Muted information of user
+	Muted struct {
+		IsMuted       bool
+		Time          time.Time
+		RemainingTime time.Duration
+	}
 )
 
 // DialNewPool connectes to a local Redis database by port pass-in.
 func DialNewPool(net string, port string) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:   80,
-		MaxActive: 12000, // max number of connections
+		MaxActive: 12000,
 		Dial: func() (redis.Conn, error) {
 			c, err := redis.Dial(net, port)
 			if err != nil {
@@ -244,21 +251,23 @@ func RegisterNewUser(user *discordgo.User) GuildUser {
 	nu := GuildUser{
 		User:      user,
 		Age:       age.Format("01/02/06 03:04:05 PM MST"),
-		Usernames: []Usernames{},
-		Nicknames: []Nicknames{},
-		Roles:     []*discordgo.Role{},
-		Warnings:  make(map[string]Warnings),
-		Kicks:     make(map[string]Kicks),
-		Bans:      make(map[string]Bans),
-		Mutes:     make(map[string]Mutes),
+		Usernames: make(map[int64]Usernames),
+		Nicknames: make(map[int64]Nicknames),
+		Warnings:  make(map[int64]Warnings),
+		Kicks:     make(map[int64]Kicks),
+		Bans:      make(map[int64]Bans),
+		Mutes:     make(map[int64]Mutes),
+		Muted:     Muted{},
 	}
 
-	// Add the current username to the GuildUser
-	nu.Usernames = append(nu.Usernames, Usernames{
+	username := Usernames{
 		Username:      user.Username,
 		Discriminator: user.Discriminator,
 		Time:          time.Now(),
-	})
+	}
+
+	// Add the current username to the GuildUser
+	nu.Usernames[MakeTimestamp()] = username
 
 	return nu
 }
@@ -286,7 +295,7 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 			Time:       time.Now(),
 		}
 
-		user.Warnings[TimeKey()] = warning
+		user.Warnings[MakeTimestamp()] = warning
 		g.GuildUser[mem.ID] = user
 
 	} else {
@@ -300,7 +309,7 @@ func LogWarning(ctx Context, mem *discordgo.User, reason string) {
 			Time:       time.Now(),
 		}
 
-		user.Warnings[TimeKey()] = warning
+		user.Warnings[MakeTimestamp()] = warning
 		g.GuildUser[mem.ID] = user
 
 	}
@@ -336,7 +345,7 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 			Time:       time.Now(),
 		}
 
-		user.Kicks[TimeKey()] = kick
+		user.Kicks[MakeTimestamp()] = kick
 		g.GuildUser[mem.ID] = user
 
 	} else {
@@ -350,7 +359,7 @@ func LogKick(ctx Context, mem *discordgo.User, reason string) {
 			Time:       time.Now(),
 		}
 
-		user.Kicks[TimeKey()] = kick
+		user.Kicks[MakeTimestamp()] = kick
 		g.GuildUser[mem.ID] = user
 
 	}
@@ -386,7 +395,7 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 			Time:       time.Now(),
 		}
 
-		user.Bans[TimeKey()] = ban
+		user.Bans[MakeTimestamp()] = ban
 		g.GuildUser[mem.ID] = user
 
 	} else {
@@ -400,7 +409,7 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 			Time:       time.Now(),
 		}
 
-		user.Bans[TimeKey()] = ban
+		user.Bans[MakeTimestamp()] = ban
 		g.GuildUser[mem.ID] = user
 
 	}

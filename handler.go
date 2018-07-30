@@ -55,12 +55,6 @@ type (
 var commands = make(map[string]Command)
 var cooldown = make(map[string][]Cooldown)
 
-// RemoveIndex :
-// Removes an elemet from an int array
-func RemoveIndex(s []int, index int) []int {
-	return append(s[:index], s[index+1:]...)
-}
-
 // IsEmpty ::
 // Simple way to check if a Command is empty
 func (c Command) isEmpty() bool {
