@@ -533,30 +533,14 @@ func Check(ctx Context) {
 				return
 			}
 
-			str := "\n"
-			for _, v := range g.GuildUser[member.ID].Warnings {
-				avatar := fmt.Sprintf("%s#%s / %s", v.AuthorUser.Username, v.AuthorUser.Discriminator, v.AuthorUser.ID)
-				channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
-
-				str = str + fmt.Sprintf(
-					`**Author**:\t%s\n
-						 **Channel**:  %s\n
-						 **Time**:\t\t%s\n
-						 **Reason**:   %s\n\n`,
-					avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
-			}
-
-			_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
+			str := FormatWarnings(g.GuildUser[member.ID].Warnings)
+			ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
 				NewEmbed().
 					SetTitle(fmt.Sprintf("Warning Stats [%d]", len(g.GuildUser[member.ID].Warnings))).
 					SetColor(warningColor).
 					SetAuthor(fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID), g.GuildUser[member.ID].User.AvatarURL("256"), g.GuildUser[member.ID].User.AvatarURL("2048")).
 					SetDescription(str).
 					SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
-
-			if err != nil {
-				return
-			}
 		}
 
 	case "KICKS":
@@ -583,31 +567,14 @@ func Check(ctx Context) {
 				return
 			}
 
-			str := "\n"
-			for _, v := range g.GuildUser[member.ID].Kicks {
-				avatar := fmt.Sprintf("%s#%s / %s", v.AuthorUser.Username, v.AuthorUser.Discriminator, v.AuthorUser.ID)
-				channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
-
-				str = str + fmt.Sprintf(
-					`**Author**:\t%s\n
-						 **Channel**:  %s\n
-						 **Time**:\t\t%s\n
-						 **Reason**:   %s\n\n`,
-					avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
-			}
-
-			_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
+			str := FormatKicks(g.GuildUser[member.ID].Kicks)
+			ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
 				NewEmbed().
-					SetTitle(fmt.Sprintf("Warning Stats [%d]", len(g.GuildUser[member.ID].Kicks))).
+					SetTitle(fmt.Sprintf("Kick Stats [%d]", len(g.GuildUser[member.ID].Kicks))).
 					SetColor(warningColor).
 					SetAuthor(fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID), g.GuildUser[member.ID].User.AvatarURL("256"), g.GuildUser[member.ID].User.AvatarURL("2048")).
 					SetDescription(str).
 					SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
-
-			if err != nil {
-				log.Println(err)
-				return
-			}
 		}
 
 	case "BANS":
@@ -634,30 +601,80 @@ func Check(ctx Context) {
 				return
 			}
 
-			str := "\n"
-			for _, v := range g.GuildUser[member.ID].Bans {
-				avatar := fmt.Sprintf("%s#%s / %s", v.AuthorUser.Username, v.AuthorUser.Discriminator, v.AuthorUser.ID)
-				channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
-
-				str = str + fmt.Sprintf(
-					`**Author**:\t%s\n
-						 **Channel**:  %s\n
-						 **Time**:\t\t%s\n
-						 **Reason**:   %s\n\n`,
-					avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
-			}
-
-			_, err := ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
+			str := FormatBans(g.GuildUser[member.ID].Bans)
+			ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
 				NewEmbed().
-					SetTitle(fmt.Sprintf("Warning Stats [%d]", len(g.GuildUser[member.ID].Bans))).
+					SetTitle(fmt.Sprintf("Ban Stats [%d]", len(g.GuildUser[member.ID].Bans))).
 					SetColor(warningColor).
 					SetAuthor(fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID), g.GuildUser[member.ID].User.AvatarURL("256"), g.GuildUser[member.ID].User.AvatarURL("2048")).
 					SetDescription(str).
 					SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
+		}
+	case "NICKNAMES":
+		for _, member := range members {
+			if _, ok := g.GuildUser[member.ID]; !ok {
+				msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I do not have any logs for that user!")
 
-			if err != nil {
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				DeleteMessageWithTime(ctx, msg.ID, 7500)
 				return
 			}
+
+			if len(g.GuildUser[member.ID].Nicknames) == 0 {
+				msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | No nicknames found!")
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				DeleteMessageWithTime(ctx, msg.ID, 5000)
+				return
+			}
+
+			str := FormatNicknames(g.GuildUser[member.ID].Nicknames)
+			ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
+				NewEmbed().
+					SetTitle(fmt.Sprintf("Nickname Stats [%d]", len(g.GuildUser[member.ID].Nicknames))).
+					SetColor(warningColor).
+					SetAuthor(fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID), g.GuildUser[member.ID].User.AvatarURL("256"), g.GuildUser[member.ID].User.AvatarURL("2048")).
+					SetDescription(str).
+					SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
+		}
+	case "USERNAMES":
+		for _, member := range members {
+			if _, ok := g.GuildUser[member.ID]; !ok {
+				msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I do not have any logs for that user!")
+
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				DeleteMessageWithTime(ctx, msg.ID, 7500)
+				return
+			}
+
+			if len(g.GuildUser[member.ID].Usernames) == 0 {
+				msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | No usernames found!")
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				DeleteMessageWithTime(ctx, msg.ID, 5000)
+				return
+			}
+
+			str := FormatUsernames(g.GuildUser[member.ID].Usernames)
+			ctx.Session.ChannelMessageSendEmbed(ctx.Channel.ID,
+				NewEmbed().
+					SetTitle(fmt.Sprintf("Username Stats [%d]", len(g.GuildUser[member.ID].Usernames))).
+					SetColor(warningColor).
+					SetAuthor(fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID), g.GuildUser[member.ID].User.AvatarURL("256"), g.GuildUser[member.ID].User.AvatarURL("2048")).
+					SetDescription(str).
+					SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
 		}
 	default:
 

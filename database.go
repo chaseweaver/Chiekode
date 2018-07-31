@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -422,21 +423,63 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 	}
 }
 
-// FormatKicks :
-// Returns a string of kicks.
-func FormatKicks(kicks []Kicks) string {
+// FormatWarnings :
+// Returns a string of warnings.
+func FormatWarnings(warnings map[int64]Warnings) string {
+
+	var keys []int64
+	for k := range warnings {
+		keys = append(keys, k)
+	}
+
+	// Sort the keys by time
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
 
 	str := "\n"
-	for _, v := range kicks {
-		avatar := fmt.Sprintf("%s#%s / %s", v.AuthorUser.Username, v.AuthorUser.Discriminator, v.AuthorUser.ID)
-		channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
+
+	for _, v := range keys {
+		avatar := fmt.Sprintf("%s#%s / %s", warnings[v].AuthorUser.Username, warnings[v].AuthorUser.Discriminator, warnings[v].AuthorUser.ID)
+		channel := fmt.Sprintf("<#%s> / %s", warnings[v].Channel.ID, warnings[v].Channel.ID)
 
 		str = str + fmt.Sprintf(
 			"**Author**:\t%s\n"+
 				"**Channel**:  %s\n"+
 				"**Time**:\t\t%s\n"+
 				"**Reason**:   %s\n\n",
-			avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
+			avatar, channel, warnings[v].Time.Format("01/02/06 03:04:05 PM MST"), warnings[v].Reason)
+	}
+
+	return str
+}
+
+// FormatKicks :
+// Returns a string of kicks.
+func FormatKicks(kicks map[int64]Kicks) string {
+
+	var keys []int64
+	for k := range kicks {
+		keys = append(keys, k)
+	}
+
+	// Sort the keys by time
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+
+	str := "\n"
+
+	for _, v := range keys {
+		avatar := fmt.Sprintf("%s#%s / %s", kicks[v].AuthorUser.Username, kicks[v].AuthorUser.Discriminator, kicks[v].AuthorUser.ID)
+		channel := fmt.Sprintf("<#%s> / %s", kicks[v].Channel.ID, kicks[v].Channel.ID)
+
+		str = str + fmt.Sprintf(
+			"**Author**:\t%s\n"+
+				"**Channel**:  %s\n"+
+				"**Time**:\t\t%s\n"+
+				"**Reason**:   %s\n\n",
+			avatar, channel, kicks[v].Time.Format("01/02/06 03:04:05 PM MST"), kicks[v].Reason)
 	}
 
 	return str
@@ -444,19 +487,30 @@ func FormatKicks(kicks []Kicks) string {
 
 // FormatBans :
 // Returns a string of bans.
-func FormatBans(bans []Bans) string {
+func FormatBans(bans map[int64]Bans) string {
+
+	var keys []int64
+	for k := range bans {
+		keys = append(keys, k)
+	}
+
+	// Sort the keys by time
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
 
 	str := "\n"
-	for _, v := range bans {
-		avatar := fmt.Sprintf("%s#%s / %s", v.AuthorUser.Username, v.AuthorUser.Discriminator, v.AuthorUser.ID)
-		channel := fmt.Sprintf("<#%s> / %s", v.Channel.ID, v.Channel.ID)
+
+	for _, v := range keys {
+		avatar := fmt.Sprintf("%s#%s / %s", bans[v].AuthorUser.Username, bans[v].AuthorUser.Discriminator, bans[v].AuthorUser.ID)
+		channel := fmt.Sprintf("<#%s> / %s", bans[v].Channel.ID, bans[v].Channel.ID)
 
 		str = str + fmt.Sprintf(
 			"**Author**:\t%s\n"+
 				"**Channel**:  %s\n"+
 				"**Time**:\t\t%s\n"+
 				"**Reason**:   %s\n\n",
-			avatar, channel, v.Time.Format("01/02/06 03:04:05 PM MST"), v.Reason)
+			avatar, channel, bans[v].Time.Format("01/02/06 03:04:05 PM MST"), bans[v].Reason)
 	}
 
 	return str
@@ -464,14 +518,25 @@ func FormatBans(bans []Bans) string {
 
 // FormatUsernames :
 // Returns a string of usernames.
-func FormatUsernames(usernames []Usernames) string {
+func FormatUsernames(usernames map[int64]Usernames) string {
+
+	var keys []int64
+	for k := range usernames {
+		keys = append(keys, k)
+	}
+
+	// Sort the keys by time
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
 
 	str := "\n"
-	for _, v := range usernames {
+
+	for _, v := range keys {
 		str = str + fmt.Sprintf(
 			"**Username**:\t%s\n"+
 				"**Time**:\t\t%s\n\n",
-			v.Username+"#"+v.Discriminator, v.Time.Format("01/02/06 03:04:05 PM MST"))
+			usernames[v].Username+"#"+usernames[v].Discriminator, usernames[v].Time.Format("01/02/06 03:04:05 PM MST"))
 	}
 
 	return str
@@ -479,14 +544,24 @@ func FormatUsernames(usernames []Usernames) string {
 
 // FormatNicknames :
 // Returns a string of nicknames.
-func FormatNicknames(nicknames []Nicknames) string {
+func FormatNicknames(nicknames map[int64]Nicknames) string {
+
+	var keys []int64
+	for k := range nicknames {
+		keys = append(keys, k)
+	}
+
+	// Sort the keys by time
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
 
 	str := "\n"
-	for _, v := range nicknames {
+	for _, v := range keys {
 		str = str + fmt.Sprintf(
 			"**Nickname**:\t%s\n"+
 				"**Time**:\t\t%s\n\n",
-			v.Nickname, v.Time.Format("01/02/06 03:04:05 PM MST"))
+			nicknames[v].Nickname, nicknames[v].Time.Format("01/02/06 03:04:05 PM MST"))
 	}
 
 	return str
