@@ -17,24 +17,25 @@ type (
 
 	// Guild configuration information per guild
 	Guild struct {
-		Guild                *discordgo.Guild
-		GuildPrefix          string
-		WelcomeMessage       string
-		GoodbyeMessage       string
-		MemberAddMessage     string
-		MemberRemoveMessage  string
-		WelcomeChannel       *discordgo.Channel
-		GoodbyeChannel       *discordgo.Channel
-		MemberAddChannel     *discordgo.Channel
-		MemberRemoveChannel  *discordgo.Channel
-		MessageEditChannel   *discordgo.Channel
-		MessageDeleteChannel *discordgo.Channel
-		GuildUser            map[string]GuildUser
-		BlacklistedUsers     []*discordgo.User
-		BlacklistedChannels  []*discordgo.Channel
-		AutoRole             []*discordgo.Role
-		MutedRole            *discordgo.Role
-		DisabledCommands     []Command
+		Guild                 *discordgo.Guild
+		GuildPrefix           string
+		WelcomeMessage        string
+		GoodbyeMessage        string
+		MemberAddMessage      string
+		MemberRemoveMessage   string
+		WelcomeChannel        *discordgo.Channel
+		GoodbyeChannel        *discordgo.Channel
+		MemberAddChannel      *discordgo.Channel
+		MemberRemoveChannel   *discordgo.Channel
+		MessageEditChannel    *discordgo.Channel
+		MessageDeleteChannel  *discordgo.Channel
+		ModerationLogsChannel *discordgo.Channel
+		GuildUser             map[string]GuildUser
+		BlacklistedUsers      []*discordgo.User
+		BlacklistedChannels   []*discordgo.Channel
+		AutoRole              []*discordgo.Role
+		MutedRole             *discordgo.Role
+		DisabledCommands      []Command
 	}
 
 	// GuildUser information
@@ -411,6 +412,58 @@ func LogBan(ctx Context, mem *discordgo.User, reason string) {
 		}
 
 		user.Bans[MakeTimestamp()] = ban
+		g.GuildUser[mem.ID] = user
+
+	}
+
+	// Pack guild information
+	err = PackGuildStruct(ctx.Guild.ID, g)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+}
+
+// LogMute :
+// Logs a mute to a user's record in the redis database.
+func LogMute(ctx Context, mem *discordgo.User, reason string, t time.Duration) {
+
+	// Fetch guild information
+	g, err := UnpackGuildStruct(ctx.Guild.ID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// Check for existing GuildUser, map mutes
+	if _, ok := g.GuildUser[mem.ID]; ok {
+
+		user := g.GuildUser[mem.ID]
+		mute := Mutes{
+			AuthorUser: ctx.Event.Author,
+			TargetUser: mem,
+			Channel:    ctx.Channel,
+			Reason:     reason,
+			Time:       time.Now(),
+			Length:     t,
+		}
+
+		user.Mutes[MakeTimestamp()] = mute
+		g.GuildUser[mem.ID] = user
+
+	} else {
+
+		user := RegisterNewUser(mem)
+		mute := Mutes{
+			AuthorUser: ctx.Event.Author,
+			TargetUser: mem,
+			Channel:    ctx.Channel,
+			Reason:     reason,
+			Time:       time.Now(),
+			Length:     t,
+		}
+
+		user.Mutes[MakeTimestamp()] = mute
 		g.GuildUser[mem.ID] = user
 
 	}

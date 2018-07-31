@@ -1,9 +1,10 @@
 # TODO
-* Change []Usernames to map[string]Usernames
-* Change []Nicknames to map[string]Nicknames
-* Add funcs MUTE / UNMUTE
+* ~~Change []Usernames to map[string]Usernames~~
+* ~~Change []Nicknames to map[string]Nicknames~~
+* Add option to add any struct changes from Bot Owner side (i.e. push new struct info) on updates
+* Add funcs ~~MUTE~~ / UNMUTE
 * Add auto unmute
-* Log mutes
+* ~~Log mutes~~
 * Add cooldowns for either individual commands, or per user basis, ignoring mods (probably #2)
 * Clean up code
 * Remove unused utils
