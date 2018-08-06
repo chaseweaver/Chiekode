@@ -499,18 +499,38 @@ func Ban(ctx Context) {
 func Lock(ctx Context) {
 
 	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
+	guild, err := ctx.Session.Guild(ctx.Guild.ID)
 
-	// Get first role on the list, which is @everyone
-	everyone := ctx.Channel.PermissionOverwrites[0].ID
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
-	// Get the current Allowed permissions
-	allow := ctx.Channel.PermissionOverwrites[0].Allow
+	// Find @everyone role
+	var everyone *discordgo.Role
+	for _, v := range guild.Roles {
+		if v.Name == "@everyone" {
+			everyone = v
+		}
+	}
 
-	// Get the current Denied permissions, OR SEND_MESSAGES together
-	deny := ctx.Channel.PermissionOverwrites[0].Deny | discordgo.PermissionSendMessages
+	// Return if the bot is unable to find the @everyone role
+	if everyone == nil {
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("❌ | I cannot find the `@everyone` role!"))
+		return
+	}
+
+	// Find and append new permission overwrites for the channel for the @everyone role
+	var allow, deny int
+	for _, v := range ctx.Channel.PermissionOverwrites {
+		if v.ID == everyone.ID {
+			allow = v.Allow
+			deny = v.Deny | discordgo.PermissionSendMessages
+		}
+	}
 
 	// Apply new permissions
-	err := ctx.Session.ChannelPermissionSet(ctx.Channel.ID, everyone, "0", allow, deny)
+	err = ctx.Session.ChannelPermissionSet(ctx.Channel.ID, everyone.ID, "0", allow, deny)
 
 	if err != nil {
 		log.Println(err)
@@ -528,18 +548,38 @@ func Lock(ctx Context) {
 func Unlock(ctx Context) {
 
 	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
+	guild, err := ctx.Session.Guild(ctx.Guild.ID)
 
-	// Get first role on the list, which is @everyone
-	everyone := ctx.Channel.PermissionOverwrites[0].ID
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
-	// Get the current Allowed permissions, OR SEND_MESSAGES together
-	allow := ctx.Channel.PermissionOverwrites[0].Allow | discordgo.PermissionSendMessages
+	// Find @everyone role
+	var everyone *discordgo.Role
+	for _, v := range guild.Roles {
+		if v.Name == "@everyone" {
+			everyone = v
+		}
+	}
 
-	// Get the current Denied permissions
-	deny := ctx.Channel.PermissionOverwrites[0].Deny
+	// Return if the bot is unable to find the @everyone role
+	if everyone == nil {
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("❌ | I cannot find the `@everyone` role!"))
+		return
+	}
+
+	// Find and append new permission overwrites for the channel for the @everyone role
+	var allow, deny int
+	for _, v := range ctx.Channel.PermissionOverwrites {
+		if v.ID == everyone.ID {
+			allow = v.Allow | discordgo.PermissionSendMessages
+			deny = v.Deny
+		}
+	}
 
 	// Apply new permissions
-	err := ctx.Session.ChannelPermissionSet(ctx.Channel.ID, everyone, "0", allow, deny)
+	err = ctx.Session.ChannelPermissionSet(ctx.Channel.ID, everyone.ID, "0", allow, deny)
 
 	if err != nil {
 		log.Println(err)
