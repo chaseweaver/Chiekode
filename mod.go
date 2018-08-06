@@ -160,7 +160,6 @@ func Warn(ctx Context) {
 		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot find that user!")
 
 		if err != nil {
-			log.Println(err)
 			return
 		}
 
@@ -178,9 +177,9 @@ func Warn(ctx Context) {
 	}
 
 	// Fetch Guild information from redis database
-	g, gerr := UnpackGuildStruct(ctx.Guild.ID)
-	if gerr != nil {
-		log.Println(gerr)
+	g, guildErr := UnpackGuildStruct(ctx.Guild.ID)
+	if guildErr != nil {
+		log.Println(guildErr)
 	}
 
 	// Warns all members found within the message, logs warning to redis database
@@ -191,7 +190,6 @@ func Warn(ctx Context) {
 			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I will not warn myself!")
 
 			if err != nil {
-				log.Println(err)
 				return
 			}
 
@@ -205,26 +203,15 @@ func Warn(ctx Context) {
 		// Author username
 		author := ctx.Event.Message.Author.Username + "#" + ctx.Event.Message.Author.Discriminator
 
-		// Creates DM channel between bot and target
-		channel, err := ctx.Session.UserChannelCreate(member.ID)
-
-		if err != nil {
-			log.Println(err)
-		}
-
 		// Sends warn message to channel the command was instantiated in
-		_, err = ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been warned by `%s`", target, author))
-
-		if err != nil {
-			log.Println(err)
-		}
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been warned by `%s`", target, author))
 
 		// Logs warning to redis database
 		LogWarning(ctx, member, reason)
 
 		// Send logs to Guild Moderation Channel
-		if gerr != nil && g.ModerationLogsChannel != nil {
-			_, err := ctx.Session.ChannelMessageSendEmbed(g.ModerationLogsChannel.ID,
+		if guildErr != nil && g.ModerationLogsChannel != nil {
+			ctx.Session.ChannelMessageSendEmbed(g.ModerationLogsChannel.ID,
 				NewEmbed().
 					SetTitle("Member Warned").
 					SetColor(warningColor).
@@ -233,10 +220,6 @@ func Warn(ctx Context) {
 					AddField("Channel", fmt.Sprintf("<#%s>", ctx.Channel.ID)).
 					AddField("Reason", reason).
 					SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
-
-			if err != nil {
-				log.Println(err)
-			}
 		}
 
 		tr := fmt.Sprintf("with reason `%s`", reason)
@@ -244,13 +227,13 @@ func Warn(ctx Context) {
 			tr = "without a reason"
 		}
 
+		// Creates DM channel between bot and target
+		channel, err := ctx.Session.UserChannelCreate(member.ID)
+
 		// Sends a DM to the user with the warning information if the user can accept DMs
-		_, err = ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been warned by `%s` %s.", author, tr))
-
-		if err != nil {
-			log.Println(err)
+		if err == nil {
+			ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been warned by `%s` %s.", author, tr))
 		}
-
 	}
 }
 
@@ -284,9 +267,9 @@ func Kick(ctx Context) {
 	}
 
 	// Fetch Guild information from redis database
-	g, gerr := UnpackGuildStruct(ctx.Guild.ID)
-	if gerr != nil {
-		log.Println(gerr)
+	g, guildErr := UnpackGuildStruct(ctx.Guild.ID)
+	if guildErr != nil {
+		log.Println(guildErr)
 	}
 
 	// Kicks all members found within the message, logs warning to redis database
@@ -297,7 +280,6 @@ func Kick(ctx Context) {
 			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I will not kick myself!")
 
 			if err != nil {
-				log.Println(err)
 				return
 			}
 
@@ -311,26 +293,15 @@ func Kick(ctx Context) {
 		// Author username
 		author := ctx.Event.Message.Author.Username + "#" + ctx.Event.Message.Author.Discriminator
 
-		// Creates DM channel between bot and target
-		channel, err := ctx.Session.UserChannelCreate(member.ID)
-
-		if err != nil {
-			log.Println(err)
-		}
-
 		// Sends kick message to channel the command was instantiated in
-		_, err = ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been kicked by `%s`", target, author))
-
-		if err != nil {
-			log.Println(err)
-		}
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been kicked by `%s`", target, author))
 
 		// Logs kick to redis database
 		LogKick(ctx, member, reason)
 
 		// Send logs to Guild Moderation Channel
-		if gerr != nil && g.ModerationLogsChannel != nil {
-			_, err := ctx.Session.ChannelMessageSendEmbed(g.ModerationLogsChannel.ID,
+		if guildErr != nil && g.ModerationLogsChannel != nil {
+			ctx.Session.ChannelMessageSendEmbed(g.ModerationLogsChannel.ID,
 				NewEmbed().
 					SetTitle("Member Kicked").
 					SetColor(kickColor).
@@ -339,10 +310,6 @@ func Kick(ctx Context) {
 					AddField("Channel", fmt.Sprintf("<#%s>", ctx.Channel.ID)).
 					AddField("Reason", reason).
 					SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
-
-			if err != nil {
-				log.Println(err)
-			}
 		}
 
 		tr := fmt.Sprintf("with reason `%s`", reason)
@@ -350,11 +317,12 @@ func Kick(ctx Context) {
 			tr = "without a reason"
 		}
 
-		// Sends a DM to the user with the kick information if the user can accept DMs
-		_, err = ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been kicked by `%s` %s.", author, tr))
+		// Creates DM channel between bot and target
+		channel, err := ctx.Session.UserChannelCreate(member.ID)
 
-		if err != nil {
-			log.Println(err)
+		// Sends a DM to the user with the kick information if the user can accept DMs
+		if err == nil {
+			ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been kicked by `%s` %s.", author, tr))
 		}
 
 		// Kicks the guild member with given reason
@@ -364,7 +332,6 @@ func Kick(ctx Context) {
 			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot kick this user!")
 
 			if err != nil {
-				log.Println(err)
 				return
 			}
 
@@ -386,7 +353,6 @@ func Ban(ctx Context) {
 		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot find that user!")
 
 		if err != nil {
-			log.Println(err)
 			return
 		}
 
@@ -404,9 +370,9 @@ func Ban(ctx Context) {
 	}
 
 	// Fetch Guild information from redis database
-	g, gerr := UnpackGuildStruct(ctx.Guild.ID)
-	if gerr != nil {
-		log.Println(gerr)
+	g, guildErr := UnpackGuildStruct(ctx.Guild.ID)
+	if guildErr != nil {
+		log.Println(err)
 	}
 
 	// Bans all members found within the message, logs warning to redis database
@@ -417,7 +383,6 @@ func Ban(ctx Context) {
 			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I will not ban myself!")
 
 			if err != nil {
-				log.Println(err)
 				return
 			}
 
@@ -431,26 +396,15 @@ func Ban(ctx Context) {
 		// Author username
 		author := ctx.Event.Message.Author.Username + "#" + ctx.Event.Message.Author.Discriminator
 
-		// Creates DM channel between bot and target
-		channel, err := ctx.Session.UserChannelCreate(member.ID)
-
-		if err != nil {
-			log.Println(err)
-		}
-
 		// Sends ban message to channel the command was instantiated in
-		_, err = ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been banned by `%s`", target, author))
-
-		if err != nil {
-			log.Println(err)
-		}
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been banned by `%s`", target, author))
 
 		// Logs ban to redis database
 		LogBan(ctx, member, reason)
 
 		// Send logs to Guild Moderation Channel
-		if gerr != nil && g.ModerationLogsChannel != nil {
-			_, err := ctx.Session.ChannelMessageSendEmbed(g.ModerationLogsChannel.ID,
+		if guildErr != nil && g.ModerationLogsChannel != nil {
+			ctx.Session.ChannelMessageSendEmbed(g.ModerationLogsChannel.ID,
 				NewEmbed().
 					SetTitle("Member Banned").
 					SetColor(banColor).
@@ -459,10 +413,6 @@ func Ban(ctx Context) {
 					AddField("Channel", fmt.Sprintf("<#%s>", ctx.Channel.ID)).
 					AddField("Reason", reason).
 					SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
-
-			if err != nil {
-				log.Println(err)
-			}
 		}
 
 		tr := fmt.Sprintf("with reason `%s`", reason)
@@ -470,11 +420,12 @@ func Ban(ctx Context) {
 			tr = "without a reason"
 		}
 
-		// Sends a DM to the user with the ban information if the user can accept DMs
-		_, err = ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been banned by `%s` %s.", author, tr))
+		// Creates DM channel between bot and target
+		channel, err := ctx.Session.UserChannelCreate(member.ID)
 
-		if err != nil {
-			log.Println(err)
+		// Sends a DM to the user with the ban information if the user can accept DMs
+		if err == nil {
+			ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been banned by `%s` %s.", author, tr))
 		}
 
 		// Bans the guild member with given reason, deletes 0 messages
@@ -484,7 +435,6 @@ func Ban(ctx Context) {
 			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot ban this user!")
 
 			if err != nil {
-				log.Println(err)
 				return
 			}
 
@@ -536,11 +486,7 @@ func Lock(ctx Context) {
 		log.Println(err)
 	}
 
-	_, err = ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("🔒 | This channel is now under lockdown!"))
-
-	if err != nil {
-		log.Println(err)
-	}
+	ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("🔒 | This channel is now under lockdown!"))
 }
 
 // Unlock :
@@ -585,11 +531,7 @@ func Unlock(ctx Context) {
 		log.Println(err)
 	}
 
-	_, err = ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("🔓 | This channel is no longer under lockdown!"))
-
-	if err != nil {
-		log.Println(err)
-	}
+	ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("🔓 | This channel is no longer under lockdown!"))
 }
 
 // Mute :
@@ -629,7 +571,6 @@ func Mute(ctx Context) {
 		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot find that user!")
 
 		if err != nil {
-			log.Println(err)
 			return
 		}
 
@@ -650,7 +591,6 @@ func Mute(ctx Context) {
 			msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I will not mute myself!")
 
 			if err != nil {
-				log.Println(err)
 				return
 			}
 
@@ -672,11 +612,7 @@ func Mute(ctx Context) {
 		}
 
 		// Sends mute message to channel the command was instantiated in
-		_, err = ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been muted by `%s`", target, author))
-
-		if err != nil {
-			log.Println(err)
-		}
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been muted by `%s`", target, author))
 
 		err = ctx.Session.GuildMemberRoleAdd(ctx.Guild.ID, member.ID, role.ID)
 
@@ -690,7 +626,7 @@ func Mute(ctx Context) {
 		LogMute(ctx, member, reason, length)
 
 		if g.ModerationLogsChannel != nil {
-			_, err := ctx.Session.ChannelMessageSendEmbed(g.ModerationLogsChannel.ID,
+			ctx.Session.ChannelMessageSendEmbed(g.ModerationLogsChannel.ID,
 				NewEmbed().
 					SetTitle("Member Mute").
 					SetColor(muteColor).
@@ -700,10 +636,6 @@ func Mute(ctx Context) {
 					AddField("Duration", fmt.Sprintf("%v", length)).
 					AddField("Reason", reason).
 					SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
-
-			if err != nil {
-				log.Println(err)
-			}
 		}
 
 		tr := fmt.Sprintf("with reason `%s`", reason)
@@ -717,11 +649,7 @@ func Mute(ctx Context) {
 		}
 
 		// Sends a DM to the user with the mute information if the user can accept DMs
-		_, err = ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been muted by `%s` %s %s.", author, tr, tl))
-
-		if err != nil {
-			log.Println(err)
-		}
+		ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been muted by `%s` %s %s.", author, tr, tl))
 	}
 }
 
@@ -742,7 +670,6 @@ func Check(ctx Context) {
 		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot find that user!")
 
 		if err != nil {
-			log.Println(err)
 			return
 		}
 
@@ -764,7 +691,6 @@ func Check(ctx Context) {
 				msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I do not have any logs for that user!")
 
 				if err != nil {
-					log.Println(err)
 					return
 				}
 

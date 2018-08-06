@@ -2,6 +2,7 @@
 * ~~Change []Usernames to map[string]Usernames~~
 * ~~Change []Nicknames to map[string]Nicknames~~
 * Add option to add any struct changes from Bot Owner side (i.e. push new struct info) on updates
+* Add ~~Moderation Logs~~
 * Add funcs ~~MUTE~~ / UNMUTE
 * Add auto unmute
 * ~~Log mutes~~
