@@ -484,6 +484,8 @@ func Lock(ctx Context) {
 
 	if err != nil {
 		log.Println(err)
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("❌ | An error has occured!"))
+		return
 	}
 
 	ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("🔒 | This channel is now under lockdown!"))
@@ -529,6 +531,8 @@ func Unlock(ctx Context) {
 
 	if err != nil {
 		log.Println(err)
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("❌ | An error has occured!"))
+		return
 	}
 
 	ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("🔓 | This channel is no longer under lockdown!"))
@@ -612,7 +616,9 @@ func Mute(ctx Context) {
 		}
 
 		// Sends mute message to channel the command was instantiated in
-		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been muted by `%s`", target, author))
+		if err == nil {
+			ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been muted by `%s`", target, author))
+		}
 
 		err = ctx.Session.GuildMemberRoleAdd(ctx.Guild.ID, member.ID, role.ID)
 
@@ -645,12 +651,113 @@ func Mute(ctx Context) {
 
 		tl := fmt.Sprintf("for `%v`", length)
 		if length == 0 {
-			tl = ", indefinitely"
+			tl = " indefinitely"
 		}
 
 		// Sends a DM to the user with the mute information if the user can accept DMs
 		ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been muted by `%s` %s %s.", author, tr, tl))
 	}
+}
+
+// Unmute :
+// Removes the guild's "mute" role from a member
+
+func Unmute(ctx Context) {
+
+	// Delete command message
+	DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
+
+	// Fetch guild information
+	g, err := UnpackGuildStruct(ctx.Guild.ID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// Check if the guild role is set
+	if g.MutedRole == nil {
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("❌ | You do not have a muted role set up! Please configure one using `%sset muted role%s<@Role|Name|ID>`", g.GuildPrefix, commands["set"].ArgsDelim))
+	}
+
+	// Check to see if the set guild role exists / still exists within the context of the guild (in case of deletion, etc.)
+	role, err := ctx.Session.State.Role(ctx.Guild.ID, g.MutedRole.ID)
+
+	if err != nil {
+		log.Println(err)
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | There was an error with the set Muted Role. Perhaps it has been changed since the last time it was configured.")
+		return
+	}
+
+	// Fetch users from message content, returns list of members and the remaining string with the member removed
+	members, reason := FetchMessageContentUsersString(ctx, strings.Join(ctx.Args, ctx.Command.ArgsDelim))
+
+	// Retuns if a user cannot be found in the message, deletes delayed response
+	if len(members) == 0 {
+		msg, err := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | I cannot find that user!")
+
+		if err != nil {
+			return
+		}
+
+		DeleteMessageWithTime(ctx, msg.ID, 7500)
+		return
+	}
+
+	// If no reason is specified, set one for the database logger
+	if len(reason) == 0 {
+		reason = "N/A"
+	}
+
+	// Bans all members found within the message, logs warning to redis database
+	for _, member := range members {
+
+		// Target username
+		target := member.Username + "#" + member.Discriminator
+
+		// Author username
+		author := ctx.Event.Message.Author.Username + "#" + ctx.Event.Message.Author.Discriminator
+
+		// Creates DM channel between bot and target
+		channel, err := ctx.Session.UserChannelCreate(member.ID)
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		// Sends mute message to channel the command was instantiated in
+		if err == nil {
+			ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("`%s` has been unmuted by `%s`", target, author))
+		}
+
+		err = ctx.Session.GuildMemberRoleAdd(ctx.Guild.ID, member.ID, role.ID)
+
+		if err != nil {
+			log.Println(err)
+			ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | An error has occured!")
+			break
+		}
+
+		if g.ModerationLogsChannel != nil {
+			ctx.Session.ChannelMessageSendEmbed(g.ModerationLogsChannel.ID,
+				NewEmbed().
+					SetTitle("Member Unmute").
+					SetColor(unmuteColor).
+					SetAuthor(fmt.Sprintf("%s#%s / %s", member.Username, member.Discriminator, member.ID), member.AvatarURL("256"), member.AvatarURL("2048")).
+					AddField("Author", fmt.Sprintf("%s#%s / %s", ctx.Event.Author.Username, ctx.Event.Author.Discriminator, ctx.Event.Author.ID)).
+					AddField("Channel", fmt.Sprintf("<#%s>", ctx.Channel.ID)).
+					AddField("Reason", reason).
+					SetTimestamp(time.Now().Format(time.RFC3339)).MessageEmbed)
+		}
+
+		tr := fmt.Sprintf("with reason `%s`", reason)
+		if reason == "N/A" {
+			tr = "without a reason"
+		}
+
+		// Sends a DM to the user with the unmute information if the user can accept DMs
+		ctx.Session.ChannelMessageSend(channel.ID, fmt.Sprintf("You have been unmuted by `%s` %s.", author, tr))
+	}
+
 }
 
 // Check :

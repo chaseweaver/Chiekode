@@ -17,6 +17,7 @@ import (
 var (
 	warningColor = 16383942
 	muteColor    = 40447
+	unmuteColor  = 4387935
 	kickColor    = 54527
 	banColor     = 16711684
 	deleteColor  = 4378356
