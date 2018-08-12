@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
+
+	"github.com/Knetic/govaluate"
 )
 
 /**
@@ -47,6 +50,22 @@ func init() {
 	})
 
 	RegisterNewCommand(Command{
+		Name:            "eval",
+		Func:            Eval,
+		Enabled:         true,
+		NSFWOnly:        false,
+		IgnoreSelf:      true,
+		IgnoreBots:      true,
+		Cooldown:        0,
+		RunIn:           []string{"DM", "Text"},
+		Aliases:         []string{"e"},
+		UserPermissions: []string{"Bot Owner"},
+		ArgsDelim:       " ",
+		Usage:           []string{},
+		Description:     "Bot-owner evaluation function.",
+	})
+
+	RegisterNewCommand(Command{
 		Name:            "test",
 		Func:            Test,
 		Enabled:         true,
@@ -84,6 +103,36 @@ func ResetGuildDatabase(ctx Context) {
 	}
 
 	ctx.Session.ChannelMessageSend(ctx.Channel.ID, "✅ | All guilds purged from database. Guild settings have been reset.")
+}
+
+// Eval :
+// Bot-owner eval command
+func Eval(ctx Context) {
+
+	if len(ctx.Args) == 0 {
+		DeleteMessageWithTime(ctx, ctx.Event.Message.ID, 0)
+		msg, _ := ctx.Session.ChannelMessageSend(ctx.Channel.ID, "❌ | An expression is required!")
+		DeleteMessageWithTime(ctx, msg.ID, 7500)
+		return
+	}
+
+	expression, err := govaluate.NewEvaluableExpression(strings.Join(ctx.Args, ctx.Command.ArgsDelim))
+
+	if err != nil {
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "**ERROR**"+FormatString(err.Error(), "ascidoc"))
+		return
+	}
+
+	parameters := make(map[string]interface{}, 8)
+	parameters["ctx"] = ctx
+	result, err := expression.Evaluate(parameters)
+
+	if err != nil {
+		ctx.Session.ChannelMessageSend(ctx.Channel.ID, "**ERROR**"+FormatString(err.Error(), "ascidoc"))
+		return
+	}
+
+	ctx.Session.ChannelMessageSend(ctx.Channel.ID, "**RESULT**"+FormatString(fmt.Sprintf("%v", result), "go"))
 }
 
 // Test :

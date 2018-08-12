@@ -710,3 +710,9 @@ func UnmuteMember(ctx Context, memberID string) {
 func MakeTimestamp() int64 {
 	return time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
 }
+
+// TypeOf :
+// Returns the type of an interface in string format
+func TypeOf(v interface{}) string {
+	return reflect.TypeOf(v).String()
+}

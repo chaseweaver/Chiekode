@@ -555,6 +555,7 @@ func Mute(ctx Context) {
 	// Check if the guild role is set
 	if g.MutedRole == nil {
 		ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("❌ | You do not have a muted role set up! Please configure one using `%sset muted role%s<@Role|Name|ID>`", g.GuildPrefix, commands["set"].ArgsDelim))
+		return
 	}
 
 	// Check to see if the set guild role exists / still exists within the context of the guild (in case of deletion, etc.)
@@ -651,7 +652,7 @@ func Mute(ctx Context) {
 
 		tl := fmt.Sprintf("for `%v`", length)
 		if length == 0 {
-			tl = " indefinitely"
+			tl = "indefinitely"
 		}
 
 		// Sends a DM to the user with the mute information if the user can accept DMs
@@ -661,7 +662,6 @@ func Mute(ctx Context) {
 
 // Unmute :
 // Removes the guild's "mute" role from a member
-
 func Unmute(ctx Context) {
 
 	// Delete command message
