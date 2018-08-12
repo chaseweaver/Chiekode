@@ -439,6 +439,7 @@ func LogMute(ctx Context, mem *discordgo.User, reason string, t time.Duration) {
 	if _, ok := g.GuildUser[mem.ID]; ok {
 
 		user := g.GuildUser[mem.ID]
+
 		mute := Mutes{
 			AuthorUser: ctx.Event.Author,
 			TargetUser: mem,
@@ -448,7 +449,14 @@ func LogMute(ctx Context, mem *discordgo.User, reason string, t time.Duration) {
 			Length:     t,
 		}
 
+		muted := Muted{
+			IsMuted:       true,
+			Time:          time.Now(),
+			RemainingTime: t,
+		}
+
 		user.Mutes[MakeTimestamp()] = mute
+		user.Muted = muted
 		g.GuildUser[mem.ID] = user
 
 	} else {

@@ -603,6 +603,17 @@ func Mute(ctx Context) {
 			return
 		}
 
+		// Check if the user is already muted
+		if _, ok := g.GuildUser[member.ID]; ok {
+			user := g.GuildUser[member.ID]
+
+			// Check if the user is currently muted already, and if so, return and do NOT log a mute
+			if user.Muted.IsMuted {
+				ctx.Session.ChannelMessageSend(ctx.Channel.ID, fmt.Sprintf("❌ | `%s#%s` is already muted!", user.User.Username, user.User.Discriminator))
+				break
+			}
+		}
+
 		// Target username
 		target := member.Username + "#" + member.Discriminator
 
